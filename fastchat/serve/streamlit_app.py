@@ -33,6 +33,7 @@ if "conversation_ui" not in st.session_state:
     st.session_state["conversation_ui"] = ConversationUI()
 conversation_ui: ConversationUI = st.session_state["conversation_ui"]
 
+
 def get_model_list(controller_url, register_api_endpoint_file, multimodal):
     global api_endpoint_info
 
@@ -200,9 +201,7 @@ conversation_ui.render_all()
 user_input = st.chat_input("👉 Enter your prompt and press ENTER")
 
 if user_input:
-    conversation_ui.add_message(
-        ConversationMessage(role="user", content=user_input)
-    )
+    conversation_ui.add_message(ConversationMessage(role="user", content=user_input))
     ret = None
     with st.spinner("Thinking..."):
         model_api_dict = (
@@ -234,6 +233,12 @@ if user_input:
             images=[],
         )
 
-        full_streamed_response = st.chat_message("Assistant").write_stream(stream_data(stream_iter))
-        conversation_ui.conversation.add_message(ConversationMessage(role="assistant", content=str(full_streamed_response).strip()))
+        full_streamed_response = st.chat_message("Assistant").write_stream(
+            stream_data(stream_iter)
+        )
+        conversation_ui.conversation.add_message(
+            ConversationMessage(
+                role="assistant", content=str(full_streamed_response).strip()
+            )
+        )
         conversation_ui.conversation.reset_streaming()

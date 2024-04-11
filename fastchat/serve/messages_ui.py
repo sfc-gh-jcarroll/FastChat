@@ -22,7 +22,7 @@ class ConversationUI:
         st.chat_message(message.role).write(escaped_content)
 
     def create_new_prompt(self):
-        output = ''
+        output = ""
         for index, message in enumerate(self.conversation.messages):
             output += f" {message.role.upper()}: {message.content}"
             if index > 1 and message.role == "assistant":

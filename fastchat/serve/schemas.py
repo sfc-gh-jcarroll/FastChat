@@ -11,10 +11,10 @@ class ConversationMessage(BaseModel):
 class Conversation(BaseModel):
     messages: List[ConversationMessage] = []
 
-    streaming_msg: str = ''
+    streaming_msg: str = ""
 
     def reset_streaming(self):
-        self.streaming_msg = ''
+        self.streaming_msg = ""
 
     def add_message(self, message: ConversationMessage):
         """
