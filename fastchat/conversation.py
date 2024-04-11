@@ -349,7 +349,8 @@ class Conversation:
         The last message is typically set to be None when constructing the prompt,
         so we need to update it in-place after getting the response from a model.
         """
-        self.messages[-1][1] = message
+        if len(self.messages) > 0 and len(self.messages[-1]) > 1:
+            self.messages[-1][1] = message
 
     def convert_image_to_base64(self, image):
         """Given an image, return the base64 encoded image string."""
