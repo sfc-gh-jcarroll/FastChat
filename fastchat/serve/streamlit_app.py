@@ -18,7 +18,7 @@ from fastchat.constants import (
 from fastchat.model.model_adapter import (
     get_conversation_template,
 )
-from messages_ui import ConversationUI
+from streamlit_messages_ui import ConversationUI
 from schemas import ConversationMessage
 
 
