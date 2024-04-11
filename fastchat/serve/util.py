@@ -11,7 +11,9 @@ def extract_diff(last_chunk, current_chunk):
     """
     # Find the index where the current chunk starts to differ from the last chunk
     min_len = min(len(last_chunk), len(current_chunk))
-    diff_start_index = next((i for i in range(min_len) if last_chunk[i] != current_chunk[i]), min_len)
+    diff_start_index = next(
+        (i for i in range(min_len) if last_chunk[i] != current_chunk[i]), min_len
+    )
 
     # Extract and return the new data from the current chunk
     new_data = current_chunk[diff_start_index:]
