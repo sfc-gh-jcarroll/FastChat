@@ -164,7 +164,11 @@ col1.button("👍 Upvote", use_container_width=True)
 col2.button("👎 Downvote", use_container_width=True)
 col3.button("⚠️ Flag", use_container_width=True)
 col4.button("🔄 Regenerate", use_container_width=True)
-col5.button("🗑 Clear history", use_container_width=True, on_click=conversation_ui.conversation.reset_messages)
+col5.button(
+    "🗑 Clear history",
+    use_container_width=True,
+    on_click=conversation_ui.conversation.reset_messages,
+)
 
 # Parameter expander
 with st.expander("Parameters"):
@@ -201,7 +205,9 @@ with st.expander("Parameters"):
 user_input = st.chat_input("👉 Enter your prompt and press ENTER")
 
 if user_input:
-    conversation_ui.add_message(ConversationMessage(role="user", content=user_input), container)
+    conversation_ui.add_message(
+        ConversationMessage(role="user", content=user_input), container
+    )
     ret = None
     with st.spinner("Thinking..."):
         model_api_dict = (
