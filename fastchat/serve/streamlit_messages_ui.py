@@ -9,17 +9,20 @@ class ConversationUI:
     def reset(self):
         self.conversation: Conversation = Conversation()
 
-    def add_message(self, message: ConversationMessage):
-        self.render_message(message)
+    def add_message(self, message: ConversationMessage, container=None):
+        self.render_message(message, container)
         self.conversation.add_message(message)
 
-    def render_all(self):
+    def render_all(self, container):
         for message in self.conversation.messages:
-            self.render_message(message)
+            self.render_message(message, container)
 
-    def render_message(self, message: ConversationMessage):
+    def render_message(self, message: ConversationMessage, container=None):
         escaped_content = message.content.replace("$", "\$")
-        st.chat_message(message.role).write(escaped_content)
+        if container is not None:
+            container.chat_message(message.role).write(escaped_content)
+        else:
+            st.chat_message(message.role).write(escaped_content)
 
     def create_new_prompt(self):
         output = ""

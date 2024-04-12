@@ -2,18 +2,10 @@ import logging
 import requests
 import streamlit as st
 import json
-from fastchat.model.model_registry import get_model_info, model_info
+from fastchat.model.model_registry import model_info
 from fastchat.constants import (
-    LOGDIR,
     WORKER_API_TIMEOUT,
     ErrorCode,
-    MODERATION_MSG,
-    CONVERSATION_LIMIT_MSG,
-    RATE_LIMIT_MSG,
-    SERVER_ERROR_MSG,
-    INPUT_CHAR_LEN_LIMIT,
-    CONVERSATION_TURN_LIMIT,
-    SESSION_EXPIRATION_TIME,
 )
 from fastchat.model.model_adapter import (
     get_conversation_template,
@@ -130,16 +122,12 @@ def stream_data(streamer):
                 output = data["text"].strip()
                 chuck = conversation_ui.conversation.get_new_streaming_chuck(output)
                 conversation_ui.conversation.update_streaming_msg(output)
-                # conv.update_last_message(output + "▌")
                 yield chuck
             else:
                 output = data["text"] + f"\n\n(error_code: {data['error_code']})"
                 # conv.update_last_message(output)
                 yield output
                 return
-        # output = data["text"].strip()
-        # conv.update_last_message(output)
-        # yield output
     except requests.exceptions.RequestException as e:
         yield f"(error_code: {ErrorCode.GRADIO_REQUEST_ERROR}, {e})"
         return
@@ -166,6 +154,19 @@ else:
 conv = get_conversation_template(selected_model_name)
 prompt = conv.get_prompt()
 
+container = st.container(border=True, height=680)
+container.chat_message("assistant").write("Hello 👋")
+conversation_ui.render_all(container)
+
+# Feedback button set
+col1, col2, col3, col4, col5 = st.columns(5)
+col1.button("👍 Upvote", use_container_width=True)
+col2.button("👎 Downvote", use_container_width=True)
+col3.button("⚠️ Flag", use_container_width=True)
+col4.button("🔄 Regenerate", use_container_width=True)
+col5.button("🗑 Clear history", use_container_width=True, on_click=conversation_ui.conversation.reset_messages)
+
+# Parameter expander
 with st.expander("Parameters"):
     temperature = st.slider(
         min_value=0.0,
@@ -196,12 +197,11 @@ with st.expander("Parameters"):
         label="Max new tokens",
     )
 
-conversation_ui.render_all()
 
 user_input = st.chat_input("👉 Enter your prompt and press ENTER")
 
 if user_input:
-    conversation_ui.add_message(ConversationMessage(role="user", content=user_input))
+    conversation_ui.add_message(ConversationMessage(role="user", content=user_input), container)
     ret = None
     with st.spinner("Thinking..."):
         model_api_dict = (
@@ -233,12 +233,12 @@ if user_input:
             images=[],
         )
 
-        full_streamed_response = st.chat_message("Assistant").write_stream(
+        full_streamed_response = container.chat_message("Assistant").write_stream(
             stream_data(stream_iter)
         )
         conversation_ui.conversation.add_message(
             ConversationMessage(
                 role="assistant", content=str(full_streamed_response).strip()
-            )
+            ),
         )
         conversation_ui.conversation.reset_streaming()

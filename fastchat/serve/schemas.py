@@ -27,3 +27,6 @@ class Conversation(BaseModel):
 
     def get_new_streaming_chuck(self, current_chuck: str) -> str:
         return extract_diff(self.streaming_msg, current_chuck)
+
+    def reset_messages(self):
+        self.messages = []
