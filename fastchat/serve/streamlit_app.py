@@ -153,7 +153,10 @@ else:
 conv = get_conversation_template(selected_model_name)
 prompt = conv.get_prompt()
 
-container = st.container(border=True, height=680)
+outter_container = st.container(border=False, height=580)
+
+container = outter_container.container(border=True, height=500)
+user_input = outter_container.chat_input("👉 Enter your prompt and press ENTER")
 container.chat_message("assistant").write("Hello 👋")
 conversation_ui.render_all(container)
 
@@ -200,8 +203,6 @@ with st.expander("Parameters"):
         label="Max new tokens",
     )
 
-
-user_input = st.chat_input("👉 Enter your prompt and press ENTER")
 
 if user_input:
     conversation_ui.add_message(
