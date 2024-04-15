@@ -125,7 +125,6 @@ def stream_data(streamer):
                 yield chuck
             else:
                 output = data["text"] + f"\n\n(error_code: {data['error_code']})"
-                # conv.update_last_message(output)
                 yield output
                 return
     except requests.exceptions.RequestException as e:
