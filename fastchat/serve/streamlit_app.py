@@ -12,17 +12,24 @@ from fastchat.model.model_adapter import (
 )
 from streamlit_messages_ui import ConversationUI
 from schemas import ConversationMessage
+from streamlit_feedback import streamlit_feedback
 
 
 st.set_page_config(
-    page_title="Chat with Open Large Vision-Language Models",
+    page_title="Chat with Open LLMs",
     page_icon=":snow_capped_mountain:",
-    layout="wide",
+    #layout="wide",
 )
+
+st.title("🏔️ Chat with Open LLMs")
 
 # Store conversation state in streamlit session
 if "conversation_ui" not in st.session_state:
     st.session_state["conversation_ui"] = ConversationUI()
+    st.session_state["conversation_ui"].add_message(
+        ConversationMessage(role="assistant", content="Hello 👋"),
+        render=False
+    )
 conversation_ui: ConversationUI = st.session_state["conversation_ui"]
 
 
@@ -138,16 +145,14 @@ def stream_data(streamer):
         return
 
 
-st.title("🏔️Chat with Open Large Vision-Language Models")
-
 # TODO: add this as command param
 if st.secrets.use_openai:
-    selected_model_name = st.selectbox("Select Model", ["gpt-3.5-turbo"])
+    selected_model_name = st.sidebar.selectbox("Select Model", ["gpt-3.5-turbo"])
 else:
     control_url = "http://localhost:21001"
     api_endpoint_info = ""
     models, all_models = get_model_list(control_url, api_endpoint_info, False)
-    selected_model_name = st.selectbox("Select Model", models)
+    selected_model_name = st.sidebar.selectbox("Select Model", models)
 
 
 # Set repetition_penalty
@@ -156,27 +161,21 @@ if "t5" in selected_model_name:
 else:
     repetition_penalty = 1.0
 
-outter_container = st.container(border=False, height=580)
 
-container = outter_container.container(border=True, height=500)
-user_input = outter_container.chat_input("👉 Enter your prompt and press ENTER")
-container.chat_message("assistant").write("Hello 👋")
-conversation_ui.render_all(container)
+user_input = st.chat_input("👉 Enter your prompt and press ENTER")
+conversation_ui.render_all()
 
-# Feedback button set
-col1, col2, col3, col4, col5 = st.columns(5)
-col1.button("👍 Upvote", use_container_width=True)
-col2.button("👎 Downvote", use_container_width=True)
-col3.button("⚠️ Flag", use_container_width=True)
-col4.button("🔄 Regenerate", use_container_width=True)
-col5.button(
-    "🗑 Clear history",
-    use_container_width=True,
-    on_click=conversation_ui.conversation.reset_messages,
-)
+with st.sidebar:
+    st.button("⚠️ Flag", use_container_width=True)
+    st.button("🔄 Regenerate", use_container_width=True)
+    st.button(
+        "🗑 Clear history",
+        use_container_width=True,
+        on_click=conversation_ui.conversation.reset_messages,
+    )
 
 # Parameter expander
-with st.expander("Parameters"):
+with st.sidebar.expander("Parameters"):
     temperature = st.slider(
         min_value=0.0,
         max_value=1.0,
@@ -209,7 +208,7 @@ with st.expander("Parameters"):
 
 if user_input:
     conversation_ui.add_message(
-        ConversationMessage(role="user", content=user_input), container
+        ConversationMessage(role="user", content=user_input)
     )
     if st.secrets.use_openai:
         from openai import OpenAI
@@ -254,7 +253,7 @@ if user_input:
                 images=[],
             )
 
-    full_streamed_response = container.chat_message("assistant").write_stream(
+    full_streamed_response = st.chat_message("assistant").write_stream(
         stream_data(stream_iter)
     )
     conversation_ui.conversation.add_message(
@@ -263,3 +262,13 @@ if user_input:
         ),
     )
     conversation_ui.conversation.reset_streaming()
+
+if len(conversation_ui.conversation.messages) > 2:
+    feedback = streamlit_feedback(
+        feedback_type="thumbs",
+        optional_text_label="[Optional] Please provide an explanation",
+        #align="flex-start",
+        key=f"feedback_{len(conversation_ui.conversation.messages)}",
+    )
+    if feedback:
+        st.toast("Feedback submitted!")
