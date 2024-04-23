@@ -116,6 +116,9 @@ def model_worker_stream_iter(
 
 
 def stream_data(streamer):
+    if st.secrets.use_openai:
+        for t in streamer:
+            yield t
     try:
         for i, data in enumerate(streamer):
             if data["error_code"] == 0:
@@ -138,10 +141,13 @@ def stream_data(streamer):
 st.title("🏔️Chat with Open Large Vision-Language Models")
 
 # TODO: add this as command param
-control_url = "http://localhost:21001"
-api_endpoint_info = ""
-models, all_models = get_model_list(control_url, api_endpoint_info, False)
-selected_model_name = st.selectbox("Select Model", models)
+if st.secrets.use_openai:
+    selected_model_name = st.selectbox("Select Model", ["gpt-3.5-turbo"])
+else:
+    control_url = "http://localhost:21001"
+    api_endpoint_info = ""
+    models, all_models = get_model_list(control_url, api_endpoint_info, False)
+    selected_model_name = st.selectbox("Select Model", models)
 
 
 # Set repetition_penalty
@@ -149,9 +155,6 @@ if "t5" in selected_model_name:
     repetition_penalty = 1.2
 else:
     repetition_penalty = 1.0
-
-conv = get_conversation_template(selected_model_name)
-prompt = conv.get_prompt()
 
 outter_container = st.container(border=False, height=580)
 
@@ -208,43 +211,55 @@ if user_input:
     conversation_ui.add_message(
         ConversationMessage(role="user", content=user_input), container
     )
-    ret = None
-    with st.spinner("Thinking..."):
-        model_api_dict = (
-            api_endpoint_info[selected_model_name]
-            if selected_model_name in api_endpoint_info
-            else None
+    if st.secrets.use_openai:
+        from openai import OpenAI
+        client = OpenAI(api_key=st.secrets.OPENAI_API_KEY)
+        stream_iter = client.chat.completions.create(
+            model=selected_model_name,
+            messages=conversation_ui.conversation.to_openai_api_messages(),
+            stream=True,
         )
 
-        if model_api_dict is None:
-            # Query worker address
-            ret = requests.post(
-                control_url + "/get_worker_address", json={"model": selected_model_name}
+    else:
+        ret = None
+        with st.spinner("Thinking..."):
+            model_api_dict = (
+                api_endpoint_info[selected_model_name]
+                if selected_model_name in api_endpoint_info
+                else None
             )
 
-    if ret is not None:
-        worker_addr = ret.json()["address"]
+            if model_api_dict is None:
+                # Query worker address
+                ret = requests.post(
+                    control_url + "/get_worker_address", json={"model": selected_model_name}
+                )
 
-        new_prompt = f"{prompt}{conversation_ui.create_new_prompt()}"
+        if ret is not None:
+            worker_addr = ret.json()["address"]
 
-        stream_iter = model_worker_stream_iter(
-            conv,
-            selected_model_name,
-            worker_addr,
-            new_prompt,
-            temperature,
-            repetition_penalty,
-            top_p,
-            max_new_tokens,
-            images=[],
-        )
+            conv = get_conversation_template(selected_model_name)
+            prompt = conv.get_prompt()
+            new_prompt = f"{prompt}{conversation_ui.create_new_prompt()}"
 
-        full_streamed_response = container.chat_message("Assistant").write_stream(
-            stream_data(stream_iter)
-        )
-        conversation_ui.conversation.add_message(
-            ConversationMessage(
-                role="assistant", content=str(full_streamed_response).strip()
-            ),
-        )
-        conversation_ui.conversation.reset_streaming()
+            stream_iter = model_worker_stream_iter(
+                conv,
+                selected_model_name,
+                worker_addr,
+                new_prompt,
+                temperature,
+                repetition_penalty,
+                top_p,
+                max_new_tokens,
+                images=[],
+            )
+
+    full_streamed_response = container.chat_message("assistant").write_stream(
+        stream_data(stream_iter)
+    )
+    conversation_ui.conversation.add_message(
+        ConversationMessage(
+            role="assistant", content=str(full_streamed_response).strip()
+        ),
+    )
+    conversation_ui.conversation.reset_streaming()
