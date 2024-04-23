@@ -9,11 +9,12 @@ class ConversationUI:
     def reset(self):
         self.conversation: Conversation = Conversation()
 
-    def add_message(self, message: ConversationMessage, container=None):
-        self.render_message(message, container)
+    def add_message(self, message: ConversationMessage, container=None, render=True):
         self.conversation.add_message(message)
+        if render:
+            self.render_message(message, container)
 
-    def render_all(self, container):
+    def render_all(self, container=None):
         for message in self.conversation.messages:
             self.render_message(message, container)
 
