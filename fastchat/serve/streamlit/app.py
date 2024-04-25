@@ -142,9 +142,9 @@ def model_worker_stream_iter(
 
 
 def stream_data(streamer):
-    if st.secrets.use_openai:
+    if st.secrets.use_arctic:
         for t in streamer:
-            yield t
+            yield str(t)
     try:
         for i, data in enumerate(streamer):
             if data["error_code"] == 0:
@@ -165,8 +165,8 @@ def stream_data(streamer):
 
 
 # TODO: add this as command param
-if st.secrets.use_openai:
-    selected_model_name = st.sidebar.selectbox("Select Model", ["gpt-3.5-turbo"])
+if st.secrets.use_arctic:
+    selected_model_name = st.sidebar.selectbox("Select Model", ["snowflake-arctic-instruct"])
 else:
     from fastchat.model.model_registry import model_info
     from fastchat.constants import (
@@ -238,14 +238,28 @@ if user_input:
     conversation_ui.add_message(
         ConversationMessage(role="user", content=user_input)
     )
-    if st.secrets.use_openai:
-        from openai import OpenAI
-        client = OpenAI(api_key=st.secrets.OPENAI_API_KEY)
-        stream_iter = client.chat.completions.create(
-            model=selected_model_name,
-            messages=conversation_ui.conversation.to_openai_api_messages(),
-            stream=True,
-        )
+    if st.secrets.use_arctic:
+        import replicate
+
+        prompt = []
+        for msg in conversation_ui.conversation.messages:
+            if msg.role == "user":
+                prompt.append("<|im_start|>user\n" + msg.content + "<|im_end|>")
+            else:
+                prompt.append("<|im_start|>assistant\n" + msg.content + "<|im_end|>")
+        
+        prompt.append("<|im_start|>assistant")
+        prompt.append("")
+        prompt_str = "\n".join(prompt)
+
+        model_input = {"prompt": prompt_str,
+                    "prompt_template": r"{prompt}",
+                    "temperature": temperature,
+                    "top_p": top_p,
+                    }
+        stream_iter = replicate.stream(
+            f"snowflake/{selected_model_name}",
+            input=model_input)
 
     else:
         ret = None

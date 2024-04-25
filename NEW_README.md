@@ -35,9 +35,11 @@ make old-ui
 ```toml
 # .streamlit/secrets.toml
 
-use_openai = true
+use_arctic = true
 
-OPENAI_API_KEY = "sk-ABC123..."
+REPLICATE_API_TOKEN = "r8_ABC123..."
+
+password = "PASS"
 ```
 
 ```sh
