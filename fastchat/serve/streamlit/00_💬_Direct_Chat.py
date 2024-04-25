@@ -2,15 +2,8 @@ import logging
 import requests
 import streamlit as st
 import json
-from fastchat.model.model_registry import model_info
-from fastchat.constants import (
-    WORKER_API_TIMEOUT,
-    ErrorCode,
-)
-from fastchat.model.model_adapter import (
-    get_conversation_template,
-)
-from streamlit_messages_ui import ConversationUI
+
+from messages_ui import ConversationUI
 from schemas import ConversationMessage
 from streamlit_feedback import streamlit_feedback
 
@@ -149,6 +142,15 @@ def stream_data(streamer):
 if st.secrets.use_openai:
     selected_model_name = st.sidebar.selectbox("Select Model", ["gpt-3.5-turbo"])
 else:
+    from fastchat.model.model_registry import model_info
+    from fastchat.constants import (
+        WORKER_API_TIMEOUT,
+        ErrorCode,
+    )
+    from fastchat.model.model_adapter import (
+        get_conversation_template,
+    )
+
     control_url = "http://localhost:21001"
     api_endpoint_info = ""
     models, all_models = get_model_list(control_url, api_endpoint_info, False)

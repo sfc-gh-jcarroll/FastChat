@@ -1,4 +1,4 @@
-## Streamlit x FastChat
+# Streamlit x FastChat
 
 ## Prerequisite
 Install required packages
@@ -28,4 +28,20 @@ make new-ui
 if you want to try the gradio version of UI, use
 ```sh
 make old-ui
+```
+
+## Simple prototyping version
+
+```toml
+# .streamlit/secrets.toml
+
+use_openai = true
+
+OPENAI_API_KEY = "sk-ABC123..."
+```
+
+```sh
+pip install -e .
+pip install --extra webui --requirement ./pyproject.toml
+streamlit run fastchat/serve/streamlit/00_💬_Direct_Chat.py
 ```
