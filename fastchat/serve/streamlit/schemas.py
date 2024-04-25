@@ -30,6 +30,3 @@ class Conversation(BaseModel):
 
     def reset_messages(self):
         self.messages = []
-
-    def to_openai_api_messages(self):
-        return [{"role": m.role, "content": m.content} for m in self.messages]
