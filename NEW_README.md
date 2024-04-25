@@ -41,7 +41,6 @@ OPENAI_API_KEY = "sk-ABC123..."
 ```
 
 ```sh
-pip install -e .
-pip install --extra webui --requirement ./pyproject.toml
+pip install -r fastchat/serve/streamlit/requirements.txt
 streamlit run fastchat/serve/streamlit/00_💬_Direct_Chat.py
 ```
