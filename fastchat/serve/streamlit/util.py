@@ -1,3 +1,5 @@
+import streamlit as st
+
 def extract_diff(last_chunk, current_chunk):
     """
     Extracts the difference between the last chunk and the current chunk.
@@ -18,3 +20,39 @@ def extract_diff(last_chunk, current_chunk):
     # Extract and return the new data from the current chunk
     new_data = current_chunk[diff_start_index:]
     return new_data
+
+def page_setup(title, icon):
+    if "already_ran" not in st.session_state:
+        st.set_option("client.showSidebarNavigation", False)
+        st.session_state.already_ran = True
+        st.rerun()
+
+    # TODO: Remove from final version
+    if "password" in st.secrets and "logged_in" not in st.session_state:
+        passwd = st.text_input("Enter password", type="password")
+        if passwd:
+            if passwd == st.secrets.password:
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.warning("Incorrect password", icon="⚠️")
+        st.stop()
+
+
+    st.set_page_config(
+        page_title=title,
+        page_icon=icon,
+    )
+
+    st.title(f"{icon} {title}")
+
+    # Add page navigation
+    with st.sidebar:
+        st.subheader("Chatbot Arena")
+        st.page_link("app.py", label="Direct Chat", icon="💬")
+        st.page_link("pages/battle.py", label="Arena (battle)", icon="⚔️")
+        st.page_link("pages/side_by_side.py", label="Arena (side by side)", icon="⚔️")
+        st.page_link("pages/vision.py", label="Vision Direct Chat", icon="👀")
+        st.page_link("pages/leaderboard.py", label="Leaderboard", icon="🏆")
+        st.page_link("pages/about.py", label="About", icon="ℹ️")
+        st.divider()
