@@ -241,11 +241,13 @@ SPONSOR_LOGOS = [
     "https://storage.googleapis.com/public-arena-asset/huggingface.png",
 ]
 
-with st.sidebar.popover("Acknowledgment", use_container_width=True):
+with st.sidebar.popover("Sponsors", use_container_width=True):
     st.markdown("We thank [Kaggle](https://www.kaggle.com/), [MBZUAI](https://mbzuai.ac.ae/), [a16z](https://www.a16z.com/), [Together AI](https://www.together.ai/), [Anyscale](https://www.anyscale.com/), [HuggingFace](https://huggingface.co/) for their generous [sponsorship](https://lmsys.org/donations/).")
-    c, _ = st.columns([1, 2])
+    logo_cols = st.columns(3) + st.columns(3)
+    i = 0
     for logo in SPONSOR_LOGOS:
-        c.image(logo, use_column_width="auto")
+        logo_cols[i % len(logo_cols)].image(logo, use_column_width="auto")
+        i += 1
 
 if user_input:
     conversation_ui.add_message(
