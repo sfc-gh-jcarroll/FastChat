@@ -135,9 +135,13 @@ def stream_data(streamer):
         return
 
 
+PROMOTION_TEXT = "[GitHub](https://github.com/lm-sys/FastChat) | [Dataset](https://github.com/lm-sys/FastChat/blob/main/docs/dataset_release.md) | [Twitter](https://twitter.com/lmsysorg) | [Discord](https://discord.gg/HSWAKCrnFx)"
+MODEL_SELECT_TEXT = "**🤖 Choose any model to chat**"
+
+st.sidebar.markdown(PROMOTION_TEXT)
 # TODO: add this as command param
 if st.secrets.use_arctic:
-    selected_model_name = st.sidebar.selectbox("Select Model", ["snowflake-arctic-instruct"])
+    selected_model_name = st.sidebar.selectbox(MODEL_SELECT_TEXT, ["snowflake-arctic-instruct"])
 else:
     from fastchat.model.model_registry import model_info
     from fastchat.constants import (
@@ -151,7 +155,24 @@ else:
     control_url = "http://localhost:21001"
     api_endpoint_info = ""
     models, all_models = get_model_list(control_url, api_endpoint_info, False)
-    selected_model_name = st.sidebar.selectbox("Select Model", models)
+    selected_model_name = st.sidebar.selectbox(MODEL_SELECT_TEXT, models)
+
+c = st.sidebar.popover("🔍 Model descriptions", use_container_width=True)
+c0, c1, c2 = c.columns(3)
+c0.markdown("Llama 3: Open foundation and chat models by Meta")
+c0.markdown("Gemini: Gemini by Google")
+c0.markdown("Claude: Claude by Anthropic")
+c0.markdown("Phi-3: A capable and cost-effective small language models (SLMs) by Microsoft")
+
+c1.markdown("Mixtral of experts: A Mixture-of-Experts model by Mistral AI")
+c1.markdown("Reka Flash: Multimodal model by Reka")
+c1.markdown("Command-R-Plus: Command-R Plus by Cohere")
+c1.markdown("Command-R: Command-R by Cohere")
+
+c2.markdown("Zephyr 141B-A35B: ORPO fine-tuned of Mixtral-8x22B-v0.1")
+c2.markdown("Gemma: Gemma by Google")
+c2.markdown("Qwen 1.5: A large language model by Alibaba Cloud")
+c2.markdown("DBRX Instruct: DBRX by Databricks Mosaic AI")
 
 
 # Set repetition_penalty
@@ -174,7 +195,7 @@ with st.sidebar:
     )
 
 # Parameter expander
-with st.sidebar.expander("Parameters"):
+with st.sidebar.popover("Parameters", use_container_width=True):
     temperature = st.slider(
         min_value=0.0,
         max_value=1.0,
@@ -204,6 +225,27 @@ with st.sidebar.expander("Parameters"):
         label="Max new tokens",
     )
 
+tos = st.sidebar.popover("Terms of Service", use_container_width=True)
+tos.markdown("""
+             Users are required to agree to the following terms before using the service:
+
+            The service is a research preview. It only provides limited safety measures and may generate offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual purposes. Please do not upload any private information. The service collects user dialogue data, including both text and images, and reserves the right to distribute it under a Creative Commons Attribution (CC-BY) or a similar license.
+             """)
+
+SPONSOR_LOGOS = [
+    "https://storage.googleapis.com/public-arena-asset/kaggle.png",
+    "https://storage.googleapis.com/public-arena-asset/mbzuai.jpeg",
+    "https://storage.googleapis.com/public-arena-asset/a16z.jpeg",
+    "https://storage.googleapis.com/public-arena-asset/together.png",
+    "https://storage.googleapis.com/public-arena-asset/anyscale.png",
+    "https://storage.googleapis.com/public-arena-asset/huggingface.png",
+]
+
+with st.sidebar.popover("Acknowledgment", use_container_width=True):
+    st.markdown("We thank [Kaggle](https://www.kaggle.com/), [MBZUAI](https://mbzuai.ac.ae/), [a16z](https://www.a16z.com/), [Together AI](https://www.together.ai/), [Anyscale](https://www.anyscale.com/), [HuggingFace](https://huggingface.co/) for their generous [sponsorship](https://lmsys.org/donations/).")
+    c, _ = st.columns([1, 2])
+    for logo in SPONSOR_LOGOS:
+        c.image(logo, use_column_width="auto")
 
 if user_input:
     conversation_ui.add_message(
