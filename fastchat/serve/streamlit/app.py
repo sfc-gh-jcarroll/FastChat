@@ -185,15 +185,6 @@ else:
 user_input = st.chat_input("👉 Enter your prompt and press ENTER")
 conversation_ui.render_all()
 
-with st.sidebar:
-    st.button("⚠️ Flag", use_container_width=True)
-    st.button("🔄 Regenerate", use_container_width=True)
-    st.button(
-        "🗑 Clear history",
-        use_container_width=True,
-        on_click=conversation_ui.conversation.reset_messages,
-    )
-
 # Parameter expander
 with st.sidebar.popover("Parameters", use_container_width=True):
     temperature = st.slider(
@@ -320,13 +311,31 @@ if user_input:
     )
     conversation_ui.conversation.reset_streaming()
 
+ps = st.container()
+
+def clear_history():
+    conversation_ui.conversation.reset_messages()
+    conversation_ui.add_message(
+        ConversationMessage(role="assistant", content="Hello 👋"),
+        render=False
+    )
+
 if len(conversation_ui.conversation.messages) > 2:
     # TODO: Big loading skeleton always briefly shows on the hosted app
-    feedback = streamlit_feedback(
-        feedback_type="thumbs",
-        optional_text_label="[Optional] Please provide an explanation",
-        #align="flex-start",
-        key=f"feedback_{len(conversation_ui.conversation.messages)}",
+    cols = ps.columns(4)
+    cols[0].button("⚠️ Flag", use_container_width=True)
+    cols[1].button("🔄 Regenerate", use_container_width=True)
+    cols[2].button(
+        "🗑 Clear history",
+        use_container_width=True,
+        on_click=clear_history,
     )
-    if feedback:
-        st.toast("Feedback submitted!")
+    with cols[3]:
+        feedback = streamlit_feedback(
+            feedback_type="thumbs",
+            #optional_text_label="[Optional] Please provide an explanation",
+            align="center",
+            key=f"feedback_{len(conversation_ui.conversation.messages)}",
+        )
+        if feedback:
+            st.toast("Feedback submitted!")
