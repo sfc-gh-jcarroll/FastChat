@@ -13,11 +13,13 @@ page_setup(
         icon="🏔️",
     )
 
+DEFAULT_MESSAGE = "Hello there 👋"
+
 # Store conversation state in streamlit session
 if "conversation_ui" not in st.session_state:
     st.session_state["conversation_ui"] = ConversationUI()
     st.session_state["conversation_ui"].add_message(
-        ConversationMessage(role="assistant", content="Hello 👋"),
+        ConversationMessage(role="assistant", content=DEFAULT_MESSAGE),
         render=False
     )
 conversation_ui: ConversationUI = st.session_state["conversation_ui"]
@@ -173,15 +175,8 @@ c2.markdown("Qwen 1.5: A large language model by Alibaba Cloud")
 c2.markdown("DBRX Instruct: DBRX by Databricks Mosaic AI")
 
 
-# Set repetition_penalty
-if "t5" in selected_model_name:
-    repetition_penalty = 1.2
-else:
-    repetition_penalty = 1.0
 
 
-user_input = st.chat_input("👉 Enter your prompt and press ENTER")
-conversation_ui.render_all()
 
 # Parameter expander
 with st.sidebar.popover("Parameters", use_container_width=True):
@@ -237,6 +232,18 @@ with st.sidebar.popover("Sponsors", use_container_width=True):
     for logo in SPONSOR_LOGOS:
         logo_cols[i % len(logo_cols)].image(logo, use_column_width="auto")
         i += 1
+
+
+# Main area
+
+# Set repetition_penalty
+if "t5" in selected_model_name:
+    repetition_penalty = 1.2
+else:
+    repetition_penalty = 1.0
+
+user_input = st.chat_input("Enter your message here.")
+conversation_ui.render_all()
 
 if user_input:
     conversation_ui.add_message(
@@ -314,7 +321,7 @@ ps = st.container()
 def clear_history():
     conversation_ui.conversation.reset_messages()
     conversation_ui.add_message(
-        ConversationMessage(role="assistant", content="Hello 👋"),
+        ConversationMessage(role="assistant", content=DEFAULT_MESSAGE),
         render=False
     )
 
