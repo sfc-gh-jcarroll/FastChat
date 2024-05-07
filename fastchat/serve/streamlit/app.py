@@ -271,6 +271,7 @@ if user_input:
     conversation_ui.add_message(
         ConversationMessage(role="user", content=user_input)
     )
+
     if st.secrets.use_arctic:
         import replicate
 
@@ -280,7 +281,7 @@ if user_input:
                 prompt.append("<|im_start|>user\n" + msg.content + "<|im_end|>")
             else:
                 prompt.append("<|im_start|>assistant\n" + msg.content + "<|im_end|>")
-        
+
         prompt.append("<|im_start|>assistant")
         prompt.append("")
         prompt_str = "\n".join(prompt)
@@ -338,7 +339,8 @@ if user_input:
     )
     conversation_ui.conversation.reset_streaming()
 
-ps = st.container()
+
+response_controls = st.container()
 
 def clear_history():
     conversation_ui.conversation.reset_messages()
@@ -349,14 +351,16 @@ def clear_history():
 
 if len(conversation_ui.conversation.messages) > 2:
     # TODO: Big loading skeleton always briefly shows on the hosted app
-    cols = ps.columns(4)
-    cols[0].button("⚠️ Flag", use_container_width=True)
-    cols[1].button("🔄 Regenerate", use_container_width=True)
+    cols = response_controls.columns(4)
+
+    cols[0].button("⚠️ &nbsp; Flag", use_container_width=True)
+    cols[1].button("🔄&nbsp; Regenerate", use_container_width=True)
     cols[2].button(
-        "🗑 Clear history",
+        "🗑&nbsp; Clear history",
         use_container_width=True,
         on_click=clear_history,
     )
+
     with cols[3]:
         feedback = streamlit_feedback(
             feedback_type="thumbs",
@@ -364,5 +368,6 @@ if len(conversation_ui.conversation.messages) > 2:
             align="center",
             key=f"feedback_{len(conversation_ui.conversation.messages)}",
         )
+
         if feedback:
             st.toast("Feedback submitted!")
