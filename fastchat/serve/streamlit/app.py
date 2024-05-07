@@ -135,10 +135,8 @@ def stream_data(streamer):
         return
 
 
-PROMOTION_TEXT = "[GitHub](https://github.com/lm-sys/FastChat) | [Dataset](https://github.com/lm-sys/FastChat/blob/main/docs/dataset_release.md) | [Twitter](https://twitter.com/lmsysorg) | [Discord](https://discord.gg/HSWAKCrnFx)"
 MODEL_SELECT_TEXT = "**🤖 Choose any model to chat**"
 
-st.sidebar.markdown(PROMOTION_TEXT)
 # TODO: add this as command param
 if st.secrets.use_arctic:
     selected_model_name = st.sidebar.selectbox(MODEL_SELECT_TEXT, ["snowflake-arctic-instruct"])
