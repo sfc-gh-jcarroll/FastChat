@@ -226,6 +226,7 @@ with st.sidebar:
         """
 
 
+# Sponsors expander
 
 SPONSOR_LOGOS = [
     "https://storage.googleapis.com/public-arena-asset/kaggle.png",
@@ -237,12 +238,22 @@ SPONSOR_LOGOS = [
 ]
 
 with st.sidebar.popover("Sponsors", use_container_width=True):
-    st.markdown("We thank [Kaggle](https://www.kaggle.com/), [MBZUAI](https://mbzuai.ac.ae/), [a16z](https://www.a16z.com/), [Together AI](https://www.together.ai/), [Anyscale](https://www.anyscale.com/), [HuggingFace](https://huggingface.co/) for their generous [sponsorship](https://lmsys.org/donations/).")
-    logo_cols = st.columns(3) + st.columns(3)
-    i = 0
-    for logo in SPONSOR_LOGOS:
-        logo_cols[i % len(logo_cols)].image(logo, use_column_width="auto")
-        i += 1
+    """
+    We thank [Kaggle](https://www.kaggle.com/), [MBZUAI](https://mbzuai.ac.ae/),
+    [a16z](https://www.a16z.com/), [Together AI](https://www.together.ai/),
+    [Anyscale](https://www.anyscale.com/), [HuggingFace](https://huggingface.co/) for their generous
+    [sponsorship](https://lmsys.org/donations/).
+    """
+
+    NUM_COLS = 3
+    for i, logo in enumerate(SPONSOR_LOGOS):
+        col_index = i % NUM_COLS
+
+        if col_index == 0:
+            cols = st.columns(NUM_COLS, gap="medium")
+
+        with cols[col_index]:
+            st.image(logo, use_column_width="auto")
 
 
 # Main area
