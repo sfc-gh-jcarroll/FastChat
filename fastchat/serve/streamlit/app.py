@@ -9,9 +9,9 @@ from schemas import ConversationMessage
 from util import page_setup
 
 page_setup(
-        title="Chat with Open LLMs",
-        icon="🏔️",
-    )
+    title="Direct Chat with Open LLMs",
+    icon="💬",
+)
 
 DEFAULT_MESSAGE = "Hello there 👋"
 
