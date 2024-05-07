@@ -174,40 +174,43 @@ selected_model_name = st.sidebar.selectbox(
     "Choose a model to chat with:", models,
     help="\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES))
 
-
-
-
-
 # Parameter expander
-with st.sidebar.popover("Parameters", use_container_width=True):
-    temperature = st.slider(
-        min_value=0.0,
-        max_value=1.0,
-        value=0.7,
-        step=0.1,
-        label="Temperature",
-    )
-    top_p = st.slider(
-        min_value=0.0,
-        max_value=1.0,
-        value=1.0,
-        step=0.1,
-        label="Top P",
-    )
-    max_output_tokens = st.slider(
-        min_value=16,
-        max_value=2048,
-        value=1024,
-        step=64,
-        label="Max output tokens",
-    )
-    max_new_tokens = st.slider(
-        min_value=100,
-        max_value=1500,
-        value=1024,
-        step=100,
-        label="Max new tokens",
-    )
+
+with st.sidebar:
+    with st.popover("Parameters", use_container_width=True):
+        temperature = st.slider(
+            min_value=0.0,
+            max_value=1.0,
+            value=0.7,
+            step=0.1,
+            label="Temperature:",
+        )
+
+        top_p = st.slider(
+            min_value=0.0,
+            max_value=1.0,
+            value=1.0,
+            step=0.1,
+            label="Top P:",
+        )
+
+        max_output_tokens = st.slider(
+            min_value=16,
+            max_value=2048,
+            value=1024,
+            step=64,
+            label="Max output tokens:",
+        )
+
+        max_new_tokens = st.slider(
+            min_value=100,
+            max_value=1500,
+            value=1024,
+            step=100,
+            label="Max new tokens:",
+        )
+
+
 
 tos = st.sidebar.popover("Terms of Service", use_container_width=True)
 tos.markdown("""
