@@ -48,11 +48,24 @@ def page_setup(title, icon):
 
     # Add page navigation
     with st.sidebar:
-        st.subheader("Chatbot Arena")
+        st.title("Chatbot Arena")
+
+        PROMOTION_TEXT = "&nbsp; &bull; &nbsp;".join([f"[{name}]({url})" for name, url in [
+            ("GitHub", "https://github.com/lm-sys/FastChat"),
+            ("Dataset", "https://github.com/lm-sys/FastChat/blob/main/docs/dataset_release.md"),
+            ("Twitter", "https://twitter.com/lmsysorg"),
+            ("Discord", "https://discord.gg/HSWAKCrnFx"),
+        ]])
+
+        st.caption(PROMOTION_TEXT)
+
+        st.write("")
+
         st.page_link("app.py", label="Direct Chat", icon="💬")
         st.page_link("pages/battle.py", label="Arena (battle)", icon="⚔️")
         st.page_link("pages/side_by_side.py", label="Arena (side by side)", icon="⚔️")
         st.page_link("pages/vision.py", label="Vision Direct Chat", icon="👀")
         st.page_link("pages/leaderboard.py", label="Leaderboard", icon="🏆")
         st.page_link("pages/about.py", label="About", icon="ℹ️")
+
         st.divider()
