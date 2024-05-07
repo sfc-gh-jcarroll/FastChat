@@ -211,13 +211,21 @@ with st.sidebar:
         )
 
 
+# TOS expander
 
-tos = st.sidebar.popover("Terms of Service", use_container_width=True)
-tos.markdown("""
-             Users are required to agree to the following terms before using the service:
+with st.sidebar:
+    with st.popover("Terms of Service", use_container_width=True):
+        """
+        Users are required to agree to the following terms before using the service:
 
-            The service is a research preview. It only provides limited safety measures and may generate offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual purposes. Please do not upload any private information. The service collects user dialogue data, including both text and images, and reserves the right to distribute it under a Creative Commons Attribution (CC-BY) or a similar license.
-             """)
+        The service is a research preview. It only provides limited safety measures and may generate
+        offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual
+        purposes. Please do not upload any private information. The service collects user dialogue
+        data, including both text and images, and reserves the right to distribute it under a
+        Creative Commons Attribution (CC-BY) or a similar license.
+        """
+
+
 
 SPONSOR_LOGOS = [
     "https://storage.googleapis.com/public-arena-asset/kaggle.png",
