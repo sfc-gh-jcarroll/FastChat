@@ -137,11 +137,9 @@ def stream_data(streamer):
         return
 
 
-MODEL_SELECT_TEXT = "**🤖 Choose any model to chat**"
-
 # TODO: add this as command param
 if st.secrets.use_arctic:
-    selected_model_name = st.sidebar.selectbox(MODEL_SELECT_TEXT, ["snowflake-arctic-instruct"])
+    models = ["snowflake-arctic-instruct"]
 else:
     from fastchat.model.model_registry import model_info
     from fastchat.constants import (
@@ -155,24 +153,26 @@ else:
     control_url = "http://localhost:21001"
     api_endpoint_info = ""
     models, all_models = get_model_list(control_url, api_endpoint_info, False)
-    selected_model_name = st.sidebar.selectbox(MODEL_SELECT_TEXT, models)
 
-c = st.sidebar.popover("🔍 Model descriptions", use_container_width=True)
-c0, c1, c2 = c.columns(3)
-c0.markdown("Llama 3: Open foundation and chat models by Meta")
-c0.markdown("Gemini: Gemini by Google")
-c0.markdown("Claude: Claude by Anthropic")
-c0.markdown("Phi-3: A capable and cost-effective small language models (SLMs) by Microsoft")
 
-c1.markdown("Mixtral of experts: A Mixture-of-Experts model by Mistral AI")
-c1.markdown("Reka Flash: Multimodal model by Reka")
-c1.markdown("Command-R-Plus: Command-R Plus by Cohere")
-c1.markdown("Command-R: Command-R by Cohere")
+MODEL_NAMES = [
+    ("Llama 3", "Open foundation and chat models by Meta"),
+    ("Gemini", "Gemini by Google"),
+    ("Claude", "Claude by Anthropic"),
+    ("Phi-3", "A capable and cost-effective small language models (SLMs), by Microsoft"),
+    ("Mixtral of experts", "A Mixture-of-Experts model by Mistral AI"),
+    ("Reka Flash", "Multimodal model by Reka"),
+    ("Command-R-Plus", "Command-R Plus by Cohere"),
+    ("Command-R", "Command-R by Cohere"),
+    ("Zephyr 141B-A35B", "ORPO fine-tuned of Mixtral-8x22B-v0.1"),
+    ("Gemma", "Gemma by Google"),
+    ("Qwen 1.5", "A large language model by Alibaba Cloud"),
+    ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
+]
 
-c2.markdown("Zephyr 141B-A35B: ORPO fine-tuned of Mixtral-8x22B-v0.1")
-c2.markdown("Gemma: Gemma by Google")
-c2.markdown("Qwen 1.5: A large language model by Alibaba Cloud")
-c2.markdown("DBRX Instruct: DBRX by Databricks Mosaic AI")
+selected_model_name = st.sidebar.selectbox(
+    "Choose a model to chat with:", models,
+    help="\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES))
 
 
 
