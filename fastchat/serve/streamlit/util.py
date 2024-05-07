@@ -66,6 +66,6 @@ def page_setup(title, icon):
         st.page_link("pages/side_by_side.py", label="Arena (side by side)", icon="⚔️")
         st.page_link("pages/vision.py", label="Vision Direct Chat", icon="👀")
         st.page_link("pages/leaderboard.py", label="Leaderboard", icon="🏆")
-        st.page_link("pages/about.py", label="About", icon="ℹ️")
+        st.page_link("pages/about.py", label="About Us", icon="ℹ️")
 
         st.divider()
