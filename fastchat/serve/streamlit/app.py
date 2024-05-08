@@ -6,8 +6,8 @@ from schemas import ConversationMessage
 from common import (
     get_model_list,
     chat_response,
+    page_setup
 )
-from util import page_setup
 
 sidebar_container = page_setup(
     title="Direct Chat with Open LLMs",
@@ -94,6 +94,10 @@ with sidebar_container:
             label="Max new tokens:",
         )
 
+
+# Main area
+
+""
 
 # Render the chat
 conversation_ui.render_all()
