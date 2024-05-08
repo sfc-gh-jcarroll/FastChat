@@ -44,5 +44,5 @@ password = "PASS"
 
 ```sh
 pip install -r fastchat/serve/streamlit/requirements.txt
-streamlit run fastchat/serve/streamlit/00_💬_Direct_Chat.py
+streamlit run fastchat/serve/streamlit/app.py
 ```
