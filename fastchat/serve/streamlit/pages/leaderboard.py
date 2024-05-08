@@ -241,6 +241,7 @@ try:
     leaderboard_df = read_leaderboard_file()
 except:
     st.error("Error loading leaderboard data.", icon=":material/chat_error:")
+    st.stop()
 
 
 ###############################################################################
