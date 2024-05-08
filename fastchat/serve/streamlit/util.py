@@ -21,7 +21,7 @@ def extract_diff(last_chunk, current_chunk):
     new_data = current_chunk[diff_start_index:]
     return new_data
 
-def page_setup(title, icon):
+def page_setup(title, icon, wide_mode=False):
     if "already_ran" not in st.session_state:
         st.set_option("client.showSidebarNavigation", False)
         st.session_state.already_ran = True
@@ -42,6 +42,7 @@ def page_setup(title, icon):
     st.set_page_config(
         page_title=title,
         page_icon=icon,
+        layout="wide" if wide_mode else "centered",
     )
 
     st.title(f"{icon} {title}")
@@ -51,6 +52,7 @@ def page_setup(title, icon):
         st.title("Chatbot Arena")
 
         PROMOTION_TEXT = "&nbsp; &bull; &nbsp;".join([f"[{name}]({url})" for name, url in [
+            ("Blog", "https://lmsys.org/blog/2023-05-03-arena/"),
             ("GitHub", "https://github.com/lm-sys/FastChat"),
             ("Dataset", "https://github.com/lm-sys/FastChat/blob/main/docs/dataset_release.md"),
             ("Twitter", "https://twitter.com/lmsysorg"),
@@ -68,4 +70,5 @@ def page_setup(title, icon):
         st.page_link("pages/leaderboard.py", label="Leaderboard", icon="🏆")
         st.page_link("pages/about.py", label="About Us", icon="ℹ️")
 
-        st.divider()
+        st.write("")
+        st.write("")
