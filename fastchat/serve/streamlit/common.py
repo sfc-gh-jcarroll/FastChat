@@ -3,8 +3,12 @@ import logging
 import requests
 import streamlit as st
 from messages_ui import ConversationUI
+from schemas import ConversationMessage
 
-def page_setup(title, icon):
+control_url = "http://localhost:21001"
+api_endpoint_info = ""
+
+def page_setup(title, icon, layout="centered"):
     if "already_ran" not in st.session_state:
         st.set_option("client.showSidebarNavigation", False)
         st.session_state.already_ran = True
@@ -25,6 +29,7 @@ def page_setup(title, icon):
     st.set_page_config(
         page_title=title,
         page_icon=icon,
+        layout=layout,
     )
 
     st.title(f"{icon} {title}")
@@ -156,3 +161,91 @@ def stream_data(streamer, conversation_ui: ConversationUI):
     except Exception as e:
         yield f"(error_code: {ErrorCode.GRADIO_STREAM_UNKNOWN_ERROR}, {e})"
         return
+
+
+def chat_response(
+        conversation_ui: ConversationUI,
+        model_name: str,
+        temperature: float,
+        top_p: float,
+        max_new_tokens: int,
+        container=None,
+    ):
+    if st.secrets.use_arctic:
+        import replicate
+        
+        prompt = []
+        for msg in conversation_ui.conversation.messages:
+            if msg.role == "user":
+                prompt.append("<|im_start|>user\n" + msg.content + "<|im_end|>")
+            else:
+                prompt.append("<|im_start|>assistant\n" + msg.content + "<|im_end|>")
+        
+        prompt.append("<|im_start|>assistant")
+        prompt.append("")
+        prompt_str = "\n".join(prompt)
+
+        model_input = {"prompt": prompt_str,
+                    "prompt_template": r"{prompt}",
+                    "temperature": temperature,
+                    "top_p": top_p,
+                    }
+        stream_iter = replicate.stream(
+            model_name,
+            input=model_input)
+    else:
+        # Set repetition_penalty
+        if "t5" in model_name:
+            repetition_penalty = 1.2
+        else:
+            repetition_penalty = 1.0
+
+        ret = None
+        with st.spinner("Thinking..."):
+            model_api_dict = (
+                api_endpoint_info[model_name]
+                if model_name in api_endpoint_info
+                else None
+            )
+
+            if model_api_dict is None:
+                # Query worker address
+                ret = requests.post(
+                    control_url + "/get_worker_address", json={"model": model_name}
+                )
+
+        if ret is not None:
+            from fastchat.model.model_adapter import (
+                get_conversation_template,
+            )
+
+            worker_addr = ret.json()["address"]
+
+            conv = get_conversation_template(model_name)
+            prompt = conv.get_prompt()
+            new_prompt = f"{prompt}{conversation_ui.create_new_prompt()}"
+
+            stream_iter = model_worker_stream_iter(
+                conv,
+                model_name,
+                worker_addr,
+                new_prompt,
+                temperature,
+                repetition_penalty,
+                top_p,
+                max_new_tokens,
+                images=[],
+            )
+    if container:
+        chat = container.chat_message("assistant")
+    else:
+        chat = st.chat_message("assistant")
+    full_streamed_response = chat.write_stream(
+        stream_data(stream_iter, conversation_ui)
+    )
+    conversation_ui.conversation.add_message(
+        ConversationMessage(
+            role="assistant", content=str(full_streamed_response).strip()
+        ),
+    )
+    conversation_ui.conversation.reset_streaming()
