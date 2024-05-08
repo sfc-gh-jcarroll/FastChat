@@ -12,10 +12,10 @@ from common import (
     page_setup,
 )
 
-page_setup(
+sidebar_container = page_setup(
         title="LMSYS Chatbot Arena: Benchmarking LLMs in the Wild",
         icon="⚔️",
-        layout="wide",
+        wide_mode=True,
     )
 
 # Store conversation state in streamlit session
@@ -29,101 +29,78 @@ if "side_by_side" not in st.session_state:
 conversations = st.session_state["side_by_side"]
 
 
-PROMOTION_TEXT = "[GitHub](https://github.com/lm-sys/FastChat) | [Dataset](https://github.com/lm-sys/FastChat/blob/main/docs/dataset_release.md) | [Twitter](https://twitter.com/lmsysorg) | [Discord](https://discord.gg/HSWAKCrnFx)"
-MODEL_SELECT_TEXT = "**🤖 Choose any model to chat**"
-
-st.sidebar.markdown(PROMOTION_TEXT)
 # TODO: add this as command param
 if st.secrets.use_arctic:
-    REPLICATE_MODELS = [
+    models = [
         "snowflake/snowflake-arctic-instruct",
         "meta/meta-llama-3-8b",
         "mistralai/mistral-7b-instruct-v0.2",
     ]
-    selected_model_name = st.sidebar.selectbox(MODEL_SELECT_TEXT, REPLICATE_MODELS)
 else:
     control_url = "http://localhost:21001"
     api_endpoint_info = ""
     models, all_models = get_model_list(control_url, api_endpoint_info, False)
-    selected_model_name = st.sidebar.selectbox(MODEL_SELECT_TEXT, models)
-
-with st.sidebar:
-    with st.popover("🔍 Model descriptions", use_container_width=True):
-        c0, c1, c2 = st.columns(3)
-
-c0.markdown("Llama 3: Open foundation and chat models by Meta")
-c0.markdown("Gemini: Gemini by Google")
-c0.markdown("Claude: Claude by Anthropic")
-c0.markdown("Phi-3: A capable and cost-effective small language models (SLMs) by Microsoft")
-
-c1.markdown("Mixtral of experts: A Mixture-of-Experts model by Mistral AI")
-c1.markdown("Reka Flash: Multimodal model by Reka")
-c1.markdown("Command-R-Plus: Command-R Plus by Cohere")
-c1.markdown("Command-R: Command-R by Cohere")
-
-c2.markdown("Zephyr 141B-A35B: ORPO fine-tuned of Mixtral-8x22B-v0.1")
-c2.markdown("Gemma: Gemma by Google")
-c2.markdown("Qwen 1.5: A large language model by Alibaba Cloud")
-c2.markdown("DBRX Instruct: DBRX by Databricks Mosaic AI")
 
 
-# Parameter expander
-with st.sidebar:
+# Sidebar
+
+with sidebar_container:
+    MODEL_NAMES = [
+        ("Llama 3", "Open foundation and chat models by Meta"),
+        ("Gemini", "Gemini by Google"),
+        ("Claude", "Claude by Anthropic"),
+        ("Phi-3", "A capable and cost-effective small language models (SLMs), by Microsoft"),
+        ("Mixtral of experts", "A Mixture-of-Experts model by Mistral AI"),
+        ("Reka Flash", "Multimodal model by Reka"),
+        ("Command-R-Plus", "Command-R Plus by Cohere"),
+        ("Command-R", "Command-R by Cohere"),
+        ("Zephyr 141B-A35B", "ORPO fine-tuned of Mixtral-8x22B-v0.1"),
+        ("Gemma", "Gemma by Google"),
+        ("Qwen 1.5", "A large language model by Alibaba Cloud"),
+        ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
+    ]
+
+    selected_model_name = st.selectbox(
+        "Choose a model to chat with:", models,
+        help="\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES))
+
     with st.popover("Parameters", use_container_width=True):
         temperature = st.slider(
             min_value=0.0,
             max_value=1.0,
             value=0.7,
             step=0.1,
-            label="Temperature",
+            label="Temperature:",
         )
+
         top_p = st.slider(
             min_value=0.0,
             max_value=1.0,
             value=1.0,
             step=0.1,
-            label="Top P",
+            label="Top P:",
         )
+
         max_output_tokens = st.slider(
             min_value=16,
             max_value=2048,
             value=1024,
             step=64,
-            label="Max output tokens",
+            label="Max output tokens:",
         )
+
         max_new_tokens = st.slider(
             min_value=100,
             max_value=1500,
             value=1024,
             step=100,
-            label="Max new tokens",
+            label="Max new tokens:",
         )
 
-with st.sidebar:
-    with st.popover("Terms of Service", use_container_width=True):
-        st.markdown("""
-             Users are required to agree to the following terms before using the service:
 
-            The service is a research preview. It only provides limited safety measures and may generate offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual purposes. Please do not upload any private information. The service collects user dialogue data, including both text and images, and reserves the right to distribute it under a Creative Commons Attribution (CC-BY) or a similar license.
-             """)
+# Main area
 
-SPONSOR_LOGOS = [
-    "https://storage.googleapis.com/public-arena-asset/kaggle.png",
-    "https://storage.googleapis.com/public-arena-asset/mbzuai.jpeg",
-    "https://storage.googleapis.com/public-arena-asset/a16z.jpeg",
-    "https://storage.googleapis.com/public-arena-asset/together.png",
-    "https://storage.googleapis.com/public-arena-asset/anyscale.png",
-    "https://storage.googleapis.com/public-arena-asset/huggingface.png",
-]
-
-with st.sidebar:
-    with st.popover("Sponsors", use_container_width=True):
-        st.markdown("We thank [Kaggle](https://www.kaggle.com/), [MBZUAI](https://mbzuai.ac.ae/), [a16z](https://www.a16z.com/), [Together AI](https://www.together.ai/), [Anyscale](https://www.anyscale.com/), [HuggingFace](https://huggingface.co/) for their generous [sponsorship](https://lmsys.org/donations/).")
-        logo_cols = st.columns(3) + st.columns(3)
-        i = 0
-        for logo in SPONSOR_LOGOS:
-            logo_cols[i % len(logo_cols)].image(logo, use_column_width="auto")
-            i += 1
+""
 
 # Render the chat
 for idx, msg in enumerate(conversations[0].conversation.messages):
@@ -163,25 +140,27 @@ if user_input := st.chat_input("👉 Enter your prompt and press ENTER"):
         t.join()
 
 # Add action buttons
-ps = st.container()
+response_controls = st.container()
 
 # def clear_history():
 #     conversation_ui.conversation.reset_messages()
 #     conversation_ui.add_message(
-#         ConversationMessage(role="assistant", content="Hello 👋"),
+#         ConversationMessage(role="assistant", content=DEFAULT_MESSAGE),
 #         render=False
 #     )
 
 # if len(conversation_ui.conversation.messages) > 2:
 #     # TODO: Big loading skeleton always briefly shows on the hosted app
-#     cols = ps.columns(4)
-#     cols[0].button("⚠️ Flag", use_container_width=True)
-#     cols[1].button("🔄 Regenerate", use_container_width=True)
+#     cols = response_controls.columns(4)
+
+#     cols[0].button("⚠️ &nbsp; Flag", use_container_width=True)
+#     cols[1].button("🔄&nbsp; Regenerate", use_container_width=True)
 #     cols[2].button(
-#         "🗑 Clear history",
+#         "🗑&nbsp; Clear history",
 #         use_container_width=True,
 #         on_click=clear_history,
 #     )
+
 #     with cols[3]:
 #         feedback = streamlit_feedback(
 #             feedback_type="thumbs",
@@ -189,5 +168,6 @@ ps = st.container()
 #             align="center",
 #             key=f"feedback_{len(conversation_ui.conversation.messages)}",
 #         )
+
 #         if feedback:
 #             st.toast("Feedback submitted!")

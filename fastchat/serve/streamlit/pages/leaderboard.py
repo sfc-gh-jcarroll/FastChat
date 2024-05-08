@@ -1,11 +1,9 @@
-from io import StringIO
 import ast
 import glob
 import pickle
 
 import numpy as np
 import pandas as pd
-import requests
 import streamlit as st
 
 from common import page_setup
