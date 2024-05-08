@@ -40,17 +40,15 @@ if st.secrets.use_arctic:
     ]
     selected_model_name = st.sidebar.selectbox(MODEL_SELECT_TEXT, REPLICATE_MODELS)
 else:
-    from fastchat.model.model_adapter import (
-        get_conversation_template,
-    )
-
     control_url = "http://localhost:21001"
     api_endpoint_info = ""
     models, all_models = get_model_list(control_url, api_endpoint_info, False)
     selected_model_name = st.sidebar.selectbox(MODEL_SELECT_TEXT, models)
 
-c = st.sidebar.popover("🔍 Model descriptions", use_container_width=True)
-c0, c1, c2 = c.columns(3)
+with st.sidebar:
+    with st.popover("🔍 Model descriptions", use_container_width=True):
+        c0, c1, c2 = st.columns(3)
+
 c0.markdown("Llama 3: Open foundation and chat models by Meta")
 c0.markdown("Gemini: Gemini by Google")
 c0.markdown("Claude: Claude by Anthropic")
@@ -75,38 +73,40 @@ else:
 
 
 # Parameter expander
-with st.sidebar.popover("Parameters", use_container_width=True):
-    temperature = st.slider(
-        min_value=0.0,
-        max_value=1.0,
-        value=0.7,
-        step=0.1,
-        label="Temperature",
-    )
-    top_p = st.slider(
-        min_value=0.0,
-        max_value=1.0,
-        value=1.0,
-        step=0.1,
-        label="Top P",
-    )
-    max_output_tokens = st.slider(
-        min_value=16,
-        max_value=2048,
-        value=1024,
-        step=64,
-        label="Max output tokens",
-    )
-    max_new_tokens = st.slider(
-        min_value=100,
-        max_value=1500,
-        value=1024,
-        step=100,
-        label="Max new tokens",
-    )
+with st.sidebar:
+    with st.popover("Parameters", use_container_width=True):
+        temperature = st.slider(
+            min_value=0.0,
+            max_value=1.0,
+            value=0.7,
+            step=0.1,
+            label="Temperature",
+        )
+        top_p = st.slider(
+            min_value=0.0,
+            max_value=1.0,
+            value=1.0,
+            step=0.1,
+            label="Top P",
+        )
+        max_output_tokens = st.slider(
+            min_value=16,
+            max_value=2048,
+            value=1024,
+            step=64,
+            label="Max output tokens",
+        )
+        max_new_tokens = st.slider(
+            min_value=100,
+            max_value=1500,
+            value=1024,
+            step=100,
+            label="Max new tokens",
+        )
 
-tos = st.sidebar.popover("Terms of Service", use_container_width=True)
-tos.markdown("""
+with st.sidebar:
+    with st.popover("Terms of Service", use_container_width=True):
+        st.markdown("""
              Users are required to agree to the following terms before using the service:
 
             The service is a research preview. It only provides limited safety measures and may generate offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual purposes. Please do not upload any private information. The service collects user dialogue data, including both text and images, and reserves the right to distribute it under a Creative Commons Attribution (CC-BY) or a similar license.
@@ -121,13 +121,14 @@ SPONSOR_LOGOS = [
     "https://storage.googleapis.com/public-arena-asset/huggingface.png",
 ]
 
-with st.sidebar.popover("Sponsors", use_container_width=True):
-    st.markdown("We thank [Kaggle](https://www.kaggle.com/), [MBZUAI](https://mbzuai.ac.ae/), [a16z](https://www.a16z.com/), [Together AI](https://www.together.ai/), [Anyscale](https://www.anyscale.com/), [HuggingFace](https://huggingface.co/) for their generous [sponsorship](https://lmsys.org/donations/).")
-    logo_cols = st.columns(3) + st.columns(3)
-    i = 0
-    for logo in SPONSOR_LOGOS:
-        logo_cols[i % len(logo_cols)].image(logo, use_column_width="auto")
-        i += 1
+with st.sidebar:
+    with st.popover("Sponsors", use_container_width=True):
+        st.markdown("We thank [Kaggle](https://www.kaggle.com/), [MBZUAI](https://mbzuai.ac.ae/), [a16z](https://www.a16z.com/), [Together AI](https://www.together.ai/), [Anyscale](https://www.anyscale.com/), [HuggingFace](https://huggingface.co/) for their generous [sponsorship](https://lmsys.org/donations/).")
+        logo_cols = st.columns(3) + st.columns(3)
+        i = 0
+        for logo in SPONSOR_LOGOS:
+            logo_cols[i % len(logo_cols)].image(logo, use_column_width="auto")
+            i += 1
 
 # Render the chat
 for c in conversations:
@@ -176,6 +177,10 @@ if user_input := st.chat_input("👉 Enter your prompt and press ENTER"):
                 )
 
         if ret is not None:
+            from fastchat.model.model_adapter import (
+                get_conversation_template,
+            )
+            
             worker_addr = ret.json()["address"]
 
             conv = get_conversation_template(selected_model_name)

@@ -8,6 +8,7 @@ from common import (
     chat_response,
     page_setup,
 )
+from util import page_setup
 
 page_setup(
         title="Chat with Open LLMs",
