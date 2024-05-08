@@ -8,7 +8,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-from util import page_setup
+from common import page_setup
 
 is_mirror = False # TODO: Read from CLI here.
 
