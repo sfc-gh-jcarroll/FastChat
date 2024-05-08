@@ -229,6 +229,39 @@ def stream_data(streamer, conversation_ui: ConversationUI):
         return
 
 
+def encode_arctic(conversation_ui: ConversationUI):
+    prompt = []
+    for msg in conversation_ui.conversation.messages:
+        if msg.role == "user":
+            prompt.append("<|im_start|>user\n" + msg.content + "<|im_end|>")
+        else:
+            prompt.append("<|im_start|>assistant\n" + msg.content + "<|im_end|>")
+
+    prompt.append("<|im_start|>assistant")
+    prompt.append("")
+    prompt_str = "\n".join(prompt)
+    return prompt_str
+
+def encode_generic(conversation_ui: ConversationUI):
+    prompt = []
+    for msg in conversation_ui.conversation.messages:
+        if msg.role == "user":
+            prompt.append("user:\n" + msg.content)
+        else:
+            prompt.append("assistant:\n" + msg.content)
+
+    prompt.append("assistant:")
+    prompt.append("")
+    prompt_str = "\n".join(prompt)
+    return prompt_str
+
+replicate_encoding = {
+    "snowflake/snowflake-arctic-instruct": encode_arctic,
+    "meta/meta-llama-3-8b": encode_generic,
+    "mistralai/mistral-7b-instruct-v0.2": encode_generic,
+}
+
+
 def chat_response(
         conversation_ui: ConversationUI,
         model_name: str,
@@ -240,16 +273,7 @@ def chat_response(
     if st.secrets.use_arctic:
         import replicate
         
-        prompt = []
-        for msg in conversation_ui.conversation.messages:
-            if msg.role == "user":
-                prompt.append("<|im_start|>user\n" + msg.content + "<|im_end|>")
-            else:
-                prompt.append("<|im_start|>assistant\n" + msg.content + "<|im_end|>")
-        
-        prompt.append("<|im_start|>assistant")
-        prompt.append("")
-        prompt_str = "\n".join(prompt)
+        prompt_str = replicate_encoding[model_name](conversation_ui)
 
         model_input = {"prompt": prompt_str,
                     "prompt_template": r"{prompt}",

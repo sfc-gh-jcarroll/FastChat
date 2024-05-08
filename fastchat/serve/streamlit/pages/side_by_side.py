@@ -45,25 +45,6 @@ else:
 # Sidebar
 
 with sidebar_container:
-    MODEL_NAMES = [
-        ("Llama 3", "Open foundation and chat models by Meta"),
-        ("Gemini", "Gemini by Google"),
-        ("Claude", "Claude by Anthropic"),
-        ("Phi-3", "A capable and cost-effective small language models (SLMs), by Microsoft"),
-        ("Mixtral of experts", "A Mixture-of-Experts model by Mistral AI"),
-        ("Reka Flash", "Multimodal model by Reka"),
-        ("Command-R-Plus", "Command-R Plus by Cohere"),
-        ("Command-R", "Command-R by Cohere"),
-        ("Zephyr 141B-A35B", "ORPO fine-tuned of Mixtral-8x22B-v0.1"),
-        ("Gemma", "Gemma by Google"),
-        ("Qwen 1.5", "A large language model by Alibaba Cloud"),
-        ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
-    ]
-
-    selected_model_name = st.selectbox(
-        "Choose a model to chat with:", models,
-        help="\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES))
-
     with st.popover("Parameters", use_container_width=True):
         temperature = st.slider(
             min_value=0.0,
@@ -102,6 +83,29 @@ with sidebar_container:
 
 ""
 
+MODEL_NAMES = [
+    ("Llama 3", "Open foundation and chat models by Meta"),
+    ("Gemini", "Gemini by Google"),
+    ("Claude", "Claude by Anthropic"),
+    ("Phi-3", "A capable and cost-effective small language models (SLMs), by Microsoft"),
+    ("Mixtral of experts", "A Mixture-of-Experts model by Mistral AI"),
+    ("Reka Flash", "Multimodal model by Reka"),
+    ("Command-R-Plus", "Command-R Plus by Cohere"),
+    ("Command-R", "Command-R by Cohere"),
+    ("Zephyr 141B-A35B", "ORPO fine-tuned of Mixtral-8x22B-v0.1"),
+    ("Gemma", "Gemma by Google"),
+    ("Qwen 1.5", "A large language model by Alibaba Cloud"),
+    ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
+]
+MODEL_HELP_STR = "\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES)
+
+selected_models = [None for _ in conversations]
+model_cols = st.columns(len(selected_models))
+for idx in range(len(selected_models)):
+    selected_models[idx] = model_cols[idx].selectbox(
+        "Choose a model to chat with:", models,
+        help=MODEL_HELP_STR, key=f"model_select_{idx}")
+
 # Render the chat
 for idx, msg in enumerate(conversations[0].conversation.messages):
     if msg.role == "user":
@@ -125,7 +129,7 @@ if user_input := st.chat_input("👉 Enter your prompt and press ENTER"):
     for i, conversation in enumerate(conversations):
         args = (
             conversation,
-            selected_model_name,
+            selected_models[i],
             temperature,
             top_p,
             max_new_tokens,
