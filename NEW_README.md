@@ -52,3 +52,12 @@ password = "PASS"
 pip install -r fastchat/serve/streamlit/requirements.txt
 streamlit run fastchat/serve/streamlit/app.py
 ```
+
+### Leaderboard
+
+Download the latest version of the following files:
+
+- `elo_results_YYYYMMDD.pkl`
+- `leaderboard_table_YYYYMMDD.csv`
+
+from [here](https://huggingface.co/spaces/lmsys/chatbot-arena-leaderboard/tree/main).
