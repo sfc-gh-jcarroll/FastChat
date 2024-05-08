@@ -1,19 +1,21 @@
-import requests
+import threading
 import streamlit as st
+from streamlit.runtime.scriptrunner import add_script_run_ctx
+from streamlit.runtime.scriptrunner.script_run_context import get_script_run_ctx
 from streamlit_feedback import streamlit_feedback
 
 from messages_ui import ConversationUI
 from schemas import ConversationMessage
 from common import (
+    chat_response,
     get_model_list,
-    model_worker_stream_iter,
     page_setup,
-    stream_data,
 )
 
 page_setup(
         title="LMSYS Chatbot Arena: Benchmarking LLMs in the Wild",
         icon="⚔️",
+        layout="wide",
     )
 
 # Store conversation state in streamlit session
@@ -63,13 +65,6 @@ c2.markdown("Zephyr 141B-A35B: ORPO fine-tuned of Mixtral-8x22B-v0.1")
 c2.markdown("Gemma: Gemma by Google")
 c2.markdown("Qwen 1.5: A large language model by Alibaba Cloud")
 c2.markdown("DBRX Instruct: DBRX by Databricks Mosaic AI")
-
-
-# Set repetition_penalty
-if "t5" in selected_model_name:
-    repetition_penalty = 1.2
-else:
-    repetition_penalty = 1.0
 
 
 # Parameter expander
@@ -131,109 +126,68 @@ with st.sidebar:
             i += 1
 
 # Render the chat
-for c in conversations:
-    c.render_all()
+for idx, msg in enumerate(conversations[0].conversation.messages):
+    if msg.role == "user":
+        conversations[0].render_message(msg)
+    else:
+        msg_cols = st.columns(len(conversations))
+        for i, conv in enumerate(conversations):
+            conv.render_message(
+                conv.conversation.messages[idx],
+                container=msg_cols[i],
+            )
 
 if user_input := st.chat_input("👉 Enter your prompt and press ENTER"):
-    conversation_ui.add_message(
-        ConversationMessage(role="user", content=user_input)
-    )
-    if st.secrets.use_arctic:
-        import replicate
-
-        prompt = []
-        for msg in conversation_ui.conversation.messages:
-            if msg.role == "user":
-                prompt.append("<|im_start|>user\n" + msg.content + "<|im_end|>")
-            else:
-                prompt.append("<|im_start|>assistant\n" + msg.content + "<|im_end|>")
-        
-        prompt.append("<|im_start|>assistant")
-        prompt.append("")
-        prompt_str = "\n".join(prompt)
-
-        model_input = {"prompt": prompt_str,
-                    "prompt_template": r"{prompt}",
-                    "temperature": temperature,
-                    "top_p": top_p,
-                    }
-        stream_iter = replicate.stream(
+    new_msg = ConversationMessage(role="user", content=user_input)
+    for c in conversations:
+        c.add_message(new_msg, render=False)
+    conversations[0].render_message(new_msg)
+    
+    msg_cols = st.columns(len(conversations))
+    threads = [None for _ in conversations]
+    for i, conversation in enumerate(conversations):
+        args = (
+            conversation,
             selected_model_name,
-            input=model_input)
-
-    else:
-        ret = None
-        with st.spinner("Thinking..."):
-            model_api_dict = (
-                api_endpoint_info[selected_model_name]
-                if selected_model_name in api_endpoint_info
-                else None
-            )
-
-            if model_api_dict is None:
-                # Query worker address
-                ret = requests.post(
-                    control_url + "/get_worker_address", json={"model": selected_model_name}
-                )
-
-        if ret is not None:
-            from fastchat.model.model_adapter import (
-                get_conversation_template,
-            )
+            temperature,
+            top_p,
+            max_new_tokens,
+            msg_cols[i],
+        )
+        threads[i] = threading.Thread(target=chat_response, args=args)
             
-            worker_addr = ret.json()["address"]
+    for t in threads:
+        add_script_run_ctx(t, get_script_run_ctx())
+        t.start()
+    for t in threads:
+        t.join()
 
-            conv = get_conversation_template(selected_model_name)
-            prompt = conv.get_prompt()
-            new_prompt = f"{prompt}{conversation_ui.create_new_prompt()}"
-
-            stream_iter = model_worker_stream_iter(
-                conv,
-                selected_model_name,
-                worker_addr,
-                new_prompt,
-                temperature,
-                repetition_penalty,
-                top_p,
-                max_new_tokens,
-                images=[],
-            )
-
-    full_streamed_response = st.chat_message("assistant").write_stream(
-        stream_data(stream_iter, conversation_ui)
-    )
-    conversation_ui.conversation.add_message(
-        ConversationMessage(
-            role="assistant", content=str(full_streamed_response).strip()
-        ),
-    )
-    conversation_ui.conversation.reset_streaming()
-
+# Add action buttons
 ps = st.container()
 
-def clear_history():
-    conversation_ui.conversation.reset_messages()
-    conversation_ui.add_message(
-        ConversationMessage(role="assistant", content="Hello 👋"),
-        render=False
-    )
+# def clear_history():
+#     conversation_ui.conversation.reset_messages()
+#     conversation_ui.add_message(
+#         ConversationMessage(role="assistant", content="Hello 👋"),
+#         render=False
+#     )
 
-if len(conversation_ui.conversation.messages) > 2:
-    # TODO: Big loading skeleton always briefly shows on the hosted app
-    cols = ps.columns(4)
-    cols[0].button("⚠️ Flag", use_container_width=True)
-    cols[1].button("🔄 Regenerate", use_container_width=True)
-    cols[2].button(
-        "🗑 Clear history",
-        use_container_width=True,
-        on_click=clear_history,
-    )
-    with cols[3]:
-        feedback = streamlit_feedback(
-            feedback_type="thumbs",
-            #optional_text_label="[Optional] Please provide an explanation",
-            align="center",
-            key=f"feedback_{len(conversation_ui.conversation.messages)}",
-        )
-        if feedback:
-            st.toast("Feedback submitted!")
+# if len(conversation_ui.conversation.messages) > 2:
+#     # TODO: Big loading skeleton always briefly shows on the hosted app
+#     cols = ps.columns(4)
+#     cols[0].button("⚠️ Flag", use_container_width=True)
+#     cols[1].button("🔄 Regenerate", use_container_width=True)
+#     cols[2].button(
+#         "🗑 Clear history",
+#         use_container_width=True,
+#         on_click=clear_history,
+#     )
+#     with cols[3]:
+#         feedback = streamlit_feedback(
+#             feedback_type="thumbs",
+#             #optional_text_label="[Optional] Please provide an explanation",
+#             align="center",
+#             key=f"feedback_{len(conversation_ui.conversation.messages)}",
+#         )
+#         if feedback:
+#             st.toast("Feedback submitted!")
