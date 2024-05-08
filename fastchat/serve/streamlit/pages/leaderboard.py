@@ -236,8 +236,11 @@ cat_name_to_explanation = {
     "Exclude Refusal": 'Exclude model responses with refusal (e.g., "I cannot answer")',
 }
 
-arena_dfs, category_elo_results = read_elo_results_file()
-leaderboard_df = read_leaderboard_file()
+try:
+    arena_dfs, category_elo_results = read_elo_results_file()
+    leaderboard_df = read_leaderboard_file()
+except:
+    st.error("Error loading leaderboard data.", icon=":material/chat_error:")
 
 
 ###############################################################################
