@@ -232,14 +232,22 @@ def stream_data(streamer, conversation_ui: ConversationUI):
 def encode_arctic(conversation_ui: ConversationUI):
     prompt = []
     for msg in conversation_ui.conversation.messages:
-        if msg.role == "user":
-            prompt.append("<|im_start|>user\n" + msg.content + "<|im_end|>")
-        else:
-            prompt.append("<|im_start|>assistant\n" + msg.content + "<|im_end|>")
+        prompt.append(f"<|im_start|>{msg.role}\n{msg.content}<|im_end|>")
 
     prompt.append("<|im_start|>assistant")
     prompt.append("")
     prompt_str = "\n".join(prompt)
+    return prompt_str
+
+def encode_llama3(conversation_ui: ConversationUI):
+    prompt = []
+    prompt.append("<|begin_of_text|>")
+    for msg in conversation_ui.conversation.messages:
+        prompt.append(f"<|start_header_id|>{msg.role}<|end_header_id|>")
+        prompt.append(f"{msg.content.strip()}<|eot_id|>")
+    prompt.append("<|start_header_id|>assistant<|end_header_id|>")
+    prompt.append("")
+    prompt_str = "\n\n".join(prompt)
     return prompt_str
 
 def encode_generic(conversation_ui: ConversationUI):
@@ -257,7 +265,7 @@ def encode_generic(conversation_ui: ConversationUI):
 
 replicate_encoding = {
     "snowflake/snowflake-arctic-instruct": encode_arctic,
-    "meta/meta-llama-3-8b": encode_generic,
+    "meta/meta-llama-3-8b": encode_llama3,
     "mistralai/mistral-7b-instruct-v0.2": encode_generic,
 }
 
