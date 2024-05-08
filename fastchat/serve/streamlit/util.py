@@ -1,3 +1,5 @@
+import streamlit as st
+
 def extract_diff(last_chunk, current_chunk):
     """
     Extracts the difference between the last chunk and the current chunk.
