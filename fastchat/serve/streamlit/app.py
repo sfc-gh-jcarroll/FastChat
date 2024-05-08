@@ -145,4 +145,4 @@ if len(conversation_ui.conversation.messages) > 2:
         )
 
         if feedback:
-            st.toast("Feedback submitted!")
+            st.toast("Feedback submitted!", icon=":material/rate_review:")

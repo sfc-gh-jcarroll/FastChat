@@ -18,12 +18,14 @@ sidebar_container = page_setup(
         wide_mode=True,
     )
 
+DEFAULT_MESSAGE = "Hello there! Let's chat?"
+
 # Store conversation state in streamlit session
 if "side_by_side" not in st.session_state:
     st.session_state["side_by_side"] = [ConversationUI(), ConversationUI()]
     for conversation in st.session_state["side_by_side"]:
         conversation.add_message(
-            ConversationMessage(role="assistant", content="Hello 👋"),
+            ConversationMessage(role="assistant", content=DEFAULT_MESSAGE),
             render=False
         )
 conversations = st.session_state["side_by_side"]
@@ -146,32 +148,42 @@ if user_input := st.chat_input("👉 Enter your prompt and press ENTER"):
 # Add action buttons
 response_controls = st.container()
 
-# def clear_history():
-#     conversation_ui.conversation.reset_messages()
-#     conversation_ui.add_message(
-#         ConversationMessage(role="assistant", content=DEFAULT_MESSAGE),
-#         render=False
-#     )
+def record_feedback():
+    st.toast("Feedback submitted!", icon=":material/rate_review:")
 
-# if len(conversation_ui.conversation.messages) > 2:
-#     # TODO: Big loading skeleton always briefly shows on the hosted app
-#     cols = response_controls.columns(4)
+def clear_history():
+    for conversation_ui in conversations:
+        conversation_ui.conversation.reset_messages()
+        conversation_ui.add_message(
+            ConversationMessage(role="assistant", content=DEFAULT_MESSAGE),
+            render=False
+        )
 
-#     cols[0].button("⚠️ &nbsp; Flag", use_container_width=True)
-#     cols[1].button("🔄&nbsp; Regenerate", use_container_width=True)
-#     cols[2].button(
-#         "🗑&nbsp; Clear history",
-#         use_container_width=True,
-#         on_click=clear_history,
-#     )
+if len(conversations[0].conversation.messages) > 2:
+    feedback_cols = response_controls.columns(4)
 
-#     with cols[3]:
-#         feedback = streamlit_feedback(
-#             feedback_type="thumbs",
-#             #optional_text_label="[Optional] Please provide an explanation",
-#             align="center",
-#             key=f"feedback_{len(conversation_ui.conversation.messages)}",
-#         )
+    BUTTON_LABELS = [
+        f"👈&nbsp; `{selected_models[0].split('/')[-1].replace('-instruct', '')}` is better",
+        f"👉&nbsp; `{selected_models[1].split('/')[-1].replace('-instruct', '')}` is better",
+        f"🤝&nbsp; Tie",
+        f"👎&nbsp; Both are bad",
+    ]
+    for i, label in enumerate(BUTTON_LABELS):
+        with feedback_cols[i]:
+            st.button(
+                label,
+                use_container_width=True,
+                on_click=record_feedback,
+            )
 
-#         if feedback:
-#             st.toast("Feedback submitted!")
+
+    # TODO: Big loading skeleton always briefly shows on the hosted app
+    action_cols = response_controls.columns(3)
+
+    action_cols[0].button("🔄&nbsp; Regenerate", use_container_width=True)
+    action_cols[1].button(
+        "🗑&nbsp; Clear history",
+        use_container_width=True,
+        on_click=clear_history,
+    )
+    action_cols[2].button("📷 &nbsp; Share", use_container_width=True)
