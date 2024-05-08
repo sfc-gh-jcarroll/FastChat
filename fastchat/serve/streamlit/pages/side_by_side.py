@@ -100,12 +100,12 @@ MODEL_NAMES = [
     ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
 ]
 MODEL_HELP_STR = "\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES)
-
+MODEL_LABELS = ["Model A", "Model B"]
 selected_models = [None for _ in conversations]
 model_cols = st.columns(len(selected_models))
 for idx in range(len(selected_models)):
     selected_models[idx] = model_cols[idx].selectbox(
-        "Choose a model to chat with:", models,
+        f"Select {MODEL_LABELS[idx]}:", models,
         help=MODEL_HELP_STR, key=f"model_select_{idx}")
 
 # Render the chat
@@ -120,7 +120,7 @@ for idx, msg in enumerate(conversations[0].conversation.messages):
                 container=msg_cols[i],
             )
 
-if user_input := st.chat_input("👉 Enter your prompt and press ENTER"):
+if user_input := st.chat_input("Enter your message here."):
     new_msg = ConversationMessage(role="user", content=user_input)
     for c in conversations:
         c.add_message(new_msg, render=False)
@@ -163,10 +163,10 @@ if len(conversations[0].conversation.messages) > 2:
     feedback_cols = response_controls.columns(4)
 
     BUTTON_LABELS = [
-        f"👈&nbsp; `{selected_models[0].split('/')[-1].replace('-instruct', '')}` is better",
-        f"👉&nbsp; `{selected_models[1].split('/')[-1].replace('-instruct', '')}` is better",
+        f"👈&nbsp; {MODEL_LABELS[0]} wins",
+        f"👉&nbsp; {MODEL_LABELS[1]} wins",
         f"🤝&nbsp; Tie",
-        f"👎&nbsp; Both are bad",
+        f"👎&nbsp; Both bad",
     ]
     for i, label in enumerate(BUTTON_LABELS):
         with feedback_cols[i]:
