@@ -1,19 +1,20 @@
 import logging
+import json
+
 import requests
 import streamlit as st
-import json
 from streamlit_feedback import streamlit_feedback
 
 from messages_ui import ConversationUI
 from schemas import ConversationMessage
 from util import page_setup
 
-page_setup(
+sidebar_container = page_setup(
     title="Direct Chat with Open LLMs",
     icon="💬",
 )
 
-DEFAULT_MESSAGE = "Hello there 👋"
+DEFAULT_MESSAGE = "Hello there! Let's chat?"
 
 # Store conversation state in streamlit session
 if "conversation_ui" not in st.session_state:
@@ -155,28 +156,28 @@ else:
     models, all_models = get_model_list(control_url, api_endpoint_info, False)
 
 
-MODEL_NAMES = [
-    ("Llama 3", "Open foundation and chat models by Meta"),
-    ("Gemini", "Gemini by Google"),
-    ("Claude", "Claude by Anthropic"),
-    ("Phi-3", "A capable and cost-effective small language models (SLMs), by Microsoft"),
-    ("Mixtral of experts", "A Mixture-of-Experts model by Mistral AI"),
-    ("Reka Flash", "Multimodal model by Reka"),
-    ("Command-R-Plus", "Command-R Plus by Cohere"),
-    ("Command-R", "Command-R by Cohere"),
-    ("Zephyr 141B-A35B", "ORPO fine-tuned of Mixtral-8x22B-v0.1"),
-    ("Gemma", "Gemma by Google"),
-    ("Qwen 1.5", "A large language model by Alibaba Cloud"),
-    ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
-]
+# Sidebar
 
-selected_model_name = st.sidebar.selectbox(
-    "Choose a model to chat with:", models,
-    help="\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES))
+with sidebar_container:
+    MODEL_NAMES = [
+        ("Llama 3", "Open foundation and chat models by Meta"),
+        ("Gemini", "Gemini by Google"),
+        ("Claude", "Claude by Anthropic"),
+        ("Phi-3", "A capable and cost-effective small language models (SLMs), by Microsoft"),
+        ("Mixtral of experts", "A Mixture-of-Experts model by Mistral AI"),
+        ("Reka Flash", "Multimodal model by Reka"),
+        ("Command-R-Plus", "Command-R Plus by Cohere"),
+        ("Command-R", "Command-R by Cohere"),
+        ("Zephyr 141B-A35B", "ORPO fine-tuned of Mixtral-8x22B-v0.1"),
+        ("Gemma", "Gemma by Google"),
+        ("Qwen 1.5", "A large language model by Alibaba Cloud"),
+        ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
+    ]
 
-# Parameter expander
+    selected_model_name = st.selectbox(
+        "Choose a model to chat with:", models,
+        help="\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES))
 
-with st.sidebar:
     with st.popover("Parameters", use_container_width=True):
         temperature = st.slider(
             min_value=0.0,
@@ -211,52 +212,9 @@ with st.sidebar:
         )
 
 
-# TOS expander
-
-with st.sidebar:
-    with st.popover("Terms of Service", use_container_width=True):
-        """
-        Users are required to agree to the following terms before using the service:
-
-        The service is a research preview. It only provides limited safety measures and may generate
-        offensive content. It must not be used for any illegal, harmful, violent, racist, or sexual
-        purposes. Please do not upload any private information. The service collects user dialogue
-        data, including both text and images, and reserves the right to distribute it under a
-        Creative Commons Attribution (CC-BY) or a similar license.
-        """
-
-
-# Sponsors expander
-
-SPONSOR_LOGOS = [
-    "https://storage.googleapis.com/public-arena-asset/kaggle.png",
-    "https://storage.googleapis.com/public-arena-asset/mbzuai.jpeg",
-    "https://storage.googleapis.com/public-arena-asset/a16z.jpeg",
-    "https://storage.googleapis.com/public-arena-asset/together.png",
-    "https://storage.googleapis.com/public-arena-asset/anyscale.png",
-    "https://storage.googleapis.com/public-arena-asset/huggingface.png",
-]
-
-with st.sidebar.popover("Sponsors", use_container_width=True):
-    """
-    We thank [Kaggle](https://www.kaggle.com/), [MBZUAI](https://mbzuai.ac.ae/),
-    [a16z](https://www.a16z.com/), [Together AI](https://www.together.ai/),
-    [Anyscale](https://www.anyscale.com/), [HuggingFace](https://huggingface.co/) for their generous
-    [sponsorship](https://lmsys.org/donations/).
-    """
-
-    NUM_COLS = 3
-    for i, logo in enumerate(SPONSOR_LOGOS):
-        col_index = i % NUM_COLS
-
-        if col_index == 0:
-            cols = st.columns(NUM_COLS, gap="medium")
-
-        with cols[col_index]:
-            st.image(logo, use_column_width="auto")
-
-
 # Main area
+
+""
 
 # Set repetition_penalty
 if "t5" in selected_model_name:
