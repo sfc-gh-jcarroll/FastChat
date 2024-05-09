@@ -2,7 +2,6 @@ import threading
 import streamlit as st
 from streamlit.runtime.scriptrunner import add_script_run_ctx
 from streamlit.runtime.scriptrunner.script_run_context import get_script_run_ctx
-from streamlit_feedback import streamlit_feedback
 
 from messages_ui import ConversationUI
 from schemas import ConversationMessage
