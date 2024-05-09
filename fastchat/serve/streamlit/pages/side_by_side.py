@@ -119,13 +119,18 @@ for idx, msg in enumerate(conversations[0].conversation.messages):
                 container=msg_cols[i],
             )
 
+user_msg = st.container()
+response = st.container()
+feedback_controls = st.empty()
+response_controls = st.empty()
+
 if user_input := st.chat_input("Enter your message here."):
     new_msg = ConversationMessage(role="user", content=user_input)
     for c in conversations:
         c.add_message(new_msg, render=False)
-    conversations[0].render_message(new_msg)
+    conversations[0].render_message(new_msg, container=user_msg)
     
-    msg_cols = st.columns(len(conversations))
+    msg_cols = response.columns(len(conversations))
     threads = [None for _ in conversations]
     for i, conversation in enumerate(conversations):
         args = (
@@ -143,9 +148,9 @@ if user_input := st.chat_input("Enter your message here."):
         t.start()
     for t in threads:
         t.join()
+    st.rerun() # Clear stale containers
 
 # Add action buttons
-response_controls = st.container()
 
 def record_feedback():
     st.toast("Feedback submitted!", icon=":material/rate_review:")
@@ -159,7 +164,7 @@ def clear_history():
         )
 
 if len(conversations[0].conversation.messages) > 2:
-    feedback_cols = response_controls.columns(4)
+    feedback_cols = feedback_controls.columns(4)
 
     BUTTON_LABELS = [
         f"👈&nbsp; {MODEL_LABELS[0]} wins",
