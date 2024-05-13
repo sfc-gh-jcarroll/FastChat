@@ -6,9 +6,12 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+from pathlib import Path
 from common import page_setup
 
 is_mirror = False # TODO: Read from CLI here.
+
+LEADERBOARD_HF_SPACE = "lmsys/chatbot-arena-leaderboard"
 
 page_setup(
     title="Leaderboard",
@@ -41,7 +44,7 @@ def read_leaderboard_file_from_hf():
     from st_files_connection import FilesConnection
 
     conn = st.connection('hf', type=FilesConnection)
-    df_files = conn.fs.glob("spaces/lmsys/chatbot-arena-leaderboard/leaderboard_table_*.csv")
+    df_files = conn.fs.glob(str(Path("spaces") / LEADERBOARD_HF_SPACE / "leaderboard_table_*.csv"))
     latest_df = df_files[-1]
     with conn.open(latest_df) as f:
         lines_bytes = f.readlines()
@@ -86,7 +89,7 @@ def read_elo_results_from_hf():
     from st_files_connection import FilesConnection
 
     conn = st.connection('hf', type=FilesConnection)
-    elo_files = conn.fs.glob("spaces/lmsys/chatbot-arena-leaderboard/elo_results_*.pkl")
+    elo_files = conn.fs.glob(str(Path("spaces") / LEADERBOARD_HF_SPACE / "elo_results_*.pkl"))
     latest_elo = elo_files[-1]
     with conn.open(latest_elo, "rb") as f:
         elo_results = pickle.load(f)
