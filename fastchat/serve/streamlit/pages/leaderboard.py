@@ -280,7 +280,7 @@ try:
     arena_dfs, category_elo_results = read_elo_results_file()
     leaderboard_df = read_leaderboard_file()
 except Exception as e:
-    if st.secrets.DEBUG_MODE:
+    if st.secrets.get("DEBUG_MODE"):
         raise e
     st.error("Error loading leaderboard data.", icon=":material/chat_error:")
     st.stop()
