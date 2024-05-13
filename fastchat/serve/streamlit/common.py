@@ -174,6 +174,38 @@ def get_model_list(controller_url, register_api_endpoint_file, multimodal):
     return visible_models, models
 
 
+def get_models():
+    # TODO: add this as command param
+    if st.secrets.use_arctic:
+        models = [
+            "snowflake/snowflake-arctic-instruct",
+            "meta/meta-llama-3-8b",
+            "mistralai/mistral-7b-instruct-v0.2",
+        ]
+    else:
+        control_url = "http://localhost:21001"
+        api_endpoint_info = ""
+        models, _ = get_model_list(control_url, api_endpoint_info, False)
+    return models
+
+
+MODEL_NAMES = [
+    ("Llama 3", "Open foundation and chat models by Meta"),
+    ("Gemini", "Gemini by Google"),
+    ("Claude", "Claude by Anthropic"),
+    ("Phi-3", "A capable and cost-effective small language models (SLMs), by Microsoft"),
+    ("Mixtral of experts", "A Mixture-of-Experts model by Mistral AI"),
+    ("Reka Flash", "Multimodal model by Reka"),
+    ("Command-R-Plus", "Command-R Plus by Cohere"),
+    ("Command-R", "Command-R by Cohere"),
+    ("Zephyr 141B-A35B", "ORPO fine-tuned of Mixtral-8x22B-v0.1"),
+    ("Gemma", "Gemma by Google"),
+    ("Qwen 1.5", "A large language model by Alibaba Cloud"),
+    ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
+]
+MODELS_HELP_STR = "\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES)
+
+
 def model_worker_stream_iter(
     conv,
     model_name,
@@ -256,6 +288,7 @@ def encode_arctic(conversation_ui: ConversationUI):
     prompt_str = "\n".join(prompt)
     return prompt_str
 
+
 def encode_llama3(conversation_ui: ConversationUI):
     prompt = []
     prompt.append("<|begin_of_text|>")
@@ -266,6 +299,7 @@ def encode_llama3(conversation_ui: ConversationUI):
     prompt.append("")
     prompt_str = "\n\n".join(prompt)
     return prompt_str
+
 
 def encode_generic(conversation_ui: ConversationUI):
     prompt = []
@@ -279,6 +313,7 @@ def encode_generic(conversation_ui: ConversationUI):
     prompt.append("")
     prompt_str = "\n".join(prompt)
     return prompt_str
+
 
 replicate_encoding = {
     "snowflake/snowflake-arctic-instruct": encode_arctic,
