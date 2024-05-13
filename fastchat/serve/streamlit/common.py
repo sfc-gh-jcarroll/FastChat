@@ -14,18 +14,6 @@ def page_setup(title, icon, wide_mode=False):
         st.session_state.already_ran = True
         st.rerun()
 
-    # TODO: Remove from final version
-    if "password" in st.secrets and "logged_in" not in st.session_state:
-        passwd = st.text_input("Enter password", type="password")
-        if passwd:
-            if passwd == st.secrets.password:
-                st.session_state.logged_in = True
-                st.rerun()
-            else:
-                st.warning("Incorrect password", icon="⚠️")
-        st.stop()
-
-
     st.set_page_config(
         page_title=title,
         page_icon=icon,
@@ -109,6 +97,35 @@ def page_setup(title, icon, wide_mode=False):
                     st.image(logo, use_column_width="auto")
 
     return sidebar_container
+
+
+def get_parameters(container):
+    with container:
+        with st.popover("Parameters", use_container_width=True):
+            temperature = st.slider(
+                min_value=0.0,
+                max_value=1.0,
+                value=0.7,
+                step=0.1,
+                label="Temperature:",
+            )
+
+            top_p = st.slider(
+                min_value=0.0,
+                max_value=1.0,
+                value=1.0,
+                step=0.1,
+                label="Top P:",
+            )
+
+            max_new_tokens = st.slider(
+                min_value=100,
+                max_value=1500,
+                value=1024,
+                step=100,
+                label="Max new tokens:",
+            )
+    return temperature, top_p, max_new_tokens
 
 
 def get_model_list(controller_url, register_api_endpoint_file, multimodal):
