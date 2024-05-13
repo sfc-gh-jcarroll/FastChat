@@ -21,28 +21,51 @@ page_setup(
 
 @st.cache_resource(ttl="1d")
 def read_leaderboard_file():
-    leaderboard_table_files = glob.glob("data/leaderboard_table_*.csv")
-    leaderboard_table_files.sort(key=lambda x: int(x[-12:-4]))
-    leaderboard_table_file = leaderboard_table_files[-1]
+    try:
+        leaderboard_table_files = glob.glob("data/leaderboard_table_*.csv")
+        leaderboard_table_files.sort(key=lambda x: int(x[-12:-4]))
+        leaderboard_table_file = leaderboard_table_files[-1]
+        with open(leaderboard_table_file) as f:
+            lines = f.readlines()
+    except:
+        lines = read_leaderboard_file_from_hf()
 
-    leaderboard_dict = load_leaderboard_table_csv(leaderboard_table_file)
+    leaderboard_dict = load_leaderboard_table_csv(lines)
     leaderboard_df = pd.DataFrame.from_dict(leaderboard_dict)
 
     return leaderboard_df
 
 
 @st.cache_resource(ttl="1d")
+def read_leaderboard_file_from_hf():
+    from st_files_connection import FilesConnection
+
+    conn = st.connection('hf', type=FilesConnection)
+    df_files = conn.fs.glob("spaces/lmsys/chatbot-arena-leaderboard/leaderboard_table_*.csv")
+    latest_df = df_files[-1]
+    with conn.open(latest_df) as f:
+        lines_bytes = f.readlines()
+    lines = []
+    for l in lines_bytes:
+        lines.append(l.decode("utf-8"))
+    print(f"Loaded leaderboard from HuggingFace @ {latest_df}")
+    return lines
+
+
+@st.cache_resource(ttl="1d")
 def read_elo_results_file():
-    elo_results_files = glob.glob("data/elo_results_*.pkl")
-    elo_results_files.sort(key=lambda x: int(x[-12:-4]))
-    elo_results_file = elo_results_files[-1]
+    try:
+        elo_results_files = glob.glob("data/elo_results_*.pkl")
+        elo_results_files.sort(key=lambda x: int(x[-12:-4]))
+        elo_results_file = elo_results_files[-1]
+
+        with open(elo_results_file, "rb") as f:
+            elo_results = pickle.load(f)
+    except:
+        elo_results = read_elo_results_from_hf()
 
     arena_dfs = {}
     category_elo_results = {}
-
-    with open(elo_results_file, "rb") as f:
-        elo_results = pickle.load(f)
-
     last_updated_time = None
 
     if "full" in elo_results:
@@ -59,10 +82,20 @@ def read_elo_results_file():
 
 
 @st.cache_resource(ttl="1d")
-def load_leaderboard_table_csv(filename, add_hyperlink=True):
-    with open(filename) as f:
-        lines = f.readlines()
+def read_elo_results_from_hf():
+    from st_files_connection import FilesConnection
 
+    conn = st.connection('hf', type=FilesConnection)
+    elo_files = conn.fs.glob("spaces/lmsys/chatbot-arena-leaderboard/elo_results_*.pkl")
+    latest_elo = elo_files[-1]
+    with conn.open(latest_elo, "rb") as f:
+        elo_results = pickle.load(f)
+    print(f"Loaded ELO results from HuggingFace @ {latest_elo}")
+    return elo_results
+
+
+@st.cache_resource(ttl="1d")
+def load_leaderboard_table_csv(lines, add_hyperlink=True):
     heads = [v.strip() for v in lines[0].split(",")]
     rows = []
 
