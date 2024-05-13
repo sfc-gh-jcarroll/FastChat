@@ -21,7 +21,7 @@ SPONSOR_LOGOS = [
     "https://storage.googleapis.com/public-arena-asset/huggingface.png",
 ]
 
-def page_setup(title, icon, wide_mode=False):
+def page_setup(title, icon, wide_mode=False, collapse_sidebar=False):
     if "already_ran" not in st.session_state:
         st.set_option("client.showSidebarNavigation", False)
         st.session_state.already_ran = True
@@ -31,6 +31,7 @@ def page_setup(title, icon, wide_mode=False):
         page_title=title,
         page_icon=icon,
         layout="wide" if wide_mode else "centered",
+        initial_sidebar_state="collapsed" if collapse_sidebar else "auto",
     )
 
     st.title(f"{icon} {title}")

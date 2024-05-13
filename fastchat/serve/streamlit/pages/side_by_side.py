@@ -1,5 +1,7 @@
 import threading
+import time
 import streamlit as st
+import streamlit.components.v1 as components
 from streamlit.runtime.scriptrunner import add_script_run_ctx
 from streamlit.runtime.scriptrunner.script_run_context import get_script_run_ctx
 
@@ -16,7 +18,8 @@ from common import (
 sidebar_container = page_setup(
         title="Benchmarking LLMs in the Wild",
         icon="⚔️",
-        wide_mode=True,
+        wide_mode=not st.session_state.get("share_mode"),
+        collapse_sidebar=st.session_state.get("share_mode"),
     )
 
 DEFAULT_MESSAGE = "Hello there! Let's chat?"
@@ -65,9 +68,13 @@ user_msg = st.empty()
 response = st.empty()
 feedback_controls = st.empty()
 response_controls = st.empty()
+if st.session_state.get("share_mode"):
+    # Draw in-line to avoid awkward printing
+    user_input = st.container().chat_input("Enter your message here.")
+else:
+    user_input = st.chat_input("Enter your message here.")
 
-user_input = st.chat_input("Enter your message here.") or st.session_state.pop("regenerate", None)
-if user_input:
+if user_input or st.session_state.pop("regenerate", None):
     new_msg = ConversationMessage(role="user", content=user_input)
     for c in conversations:
         c.add_message(new_msg, render=False)
@@ -106,11 +113,6 @@ def clear_history():
             render=False
         )
 
-@st.experimental_dialog("Share")
-def share():
-    st.write("Share your conversation with the following:")
-    st.divider()
-    st.write("_to add_")
 
 def regenerate():
     st.session_state.regenerate = conversations[0].conversation.messages[-2].content
@@ -145,4 +147,17 @@ if len(conversations[0].conversation.messages) > 1:
         on_click=clear_history,
     )
     if action_cols[2].button("📷 &nbsp; Share", use_container_width=True):
-        share()
+        st.session_state.share_mode = True
+        st.rerun()
+
+if st.session_state.pop("share_mode", None):
+    time.sleep(0.2)
+    components.html(
+        f"""
+            <script>
+            window.parent.print();
+            </script>
+        """,
+        height=0,
+        width=0,
+    )
