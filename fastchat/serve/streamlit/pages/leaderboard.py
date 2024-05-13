@@ -279,7 +279,9 @@ cat_name_to_explanation = {
 try:
     arena_dfs, category_elo_results = read_elo_results_file()
     leaderboard_df = read_leaderboard_file()
-except:
+except Exception as e:
+    if st.secrets.DEBUG_MODE:
+        raise e
     st.error("Error loading leaderboard data.", icon=":material/chat_error:")
     st.stop()
 
