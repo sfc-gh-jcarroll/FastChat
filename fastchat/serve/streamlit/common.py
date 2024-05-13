@@ -1,7 +1,9 @@
 import json
 import logging
+import os
 import requests
 import streamlit as st
+from fastchat.constants import ErrorCode
 from messages_ui import ConversationUI
 from schemas import ConversationMessage
 
@@ -175,8 +177,7 @@ def get_model_list(controller_url, register_api_endpoint_file, multimodal):
 
 
 def get_models():
-    # TODO: add this as command param
-    if st.secrets.use_arctic:
+    if os.environ["USE_REPLICATE"]:
         models = [
             "snowflake/snowflake-arctic-instruct",
             "meta/meta-llama-3-8b",
@@ -253,31 +254,6 @@ def model_worker_stream_iter(
             yield data
 
 
-def stream_data(streamer, conversation_ui: ConversationUI):
-    from fastchat.constants import ErrorCode
-
-    if st.secrets.use_arctic:
-        for t in streamer:
-            yield str(t)
-    try:
-        for i, data in enumerate(streamer):
-            if data["error_code"] == 0:
-                output = data["text"].strip()
-                chuck = conversation_ui.conversation.get_new_streaming_chuck(output)
-                conversation_ui.conversation.update_streaming_msg(output)
-                yield chuck
-            else:
-                output = data["text"] + f"\n\n(error_code: {data['error_code']})"
-                yield output
-                return
-    except requests.exceptions.RequestException as e:
-        yield f"(error_code: {ErrorCode.GRADIO_REQUEST_ERROR}, {e})"
-        return
-    except Exception as e:
-        yield f"(error_code: {ErrorCode.GRADIO_STREAM_UNKNOWN_ERROR}, {e})"
-        return
-
-
 def encode_arctic(conversation_ui: ConversationUI):
     prompt = []
     for msg in conversation_ui.conversation.messages:
@@ -322,6 +298,96 @@ replicate_encoding = {
 }
 
 
+def generate_stream_replicate(
+        conversation_ui: ConversationUI,
+        model_name: str,
+        temperature: float,
+        top_p: float,
+):
+    import replicate
+    
+    prompt_str = replicate_encoding[model_name](conversation_ui)
+
+    model_input = {"prompt": prompt_str,
+                "prompt_template": r"{prompt}",
+                "temperature": temperature,
+                "top_p": top_p,
+                }
+    stream_iter = replicate.stream(
+        model_name,
+        input=model_input)
+    
+    for t in stream_iter:
+        yield str(t)
+
+def generate_stream(
+        conversation_ui: ConversationUI,
+        model_name: str,
+        temperature: float,
+        top_p: float,
+        max_new_tokens: int,
+    ):
+    # Set repetition_penalty
+    if "t5" in model_name:
+        repetition_penalty = 1.2
+    else:
+        repetition_penalty = 1.0
+
+    ret = None
+    with st.spinner("Thinking..."):
+        model_api_dict = (
+            api_endpoint_info[model_name]
+            if model_name in api_endpoint_info
+            else None
+        )
+
+        if model_api_dict is None:
+            # Query worker address
+            ret = requests.post(
+                control_url + "/get_worker_address", json={"model": model_name}
+            )
+
+    if ret is not None:
+        from fastchat.model.model_adapter import (
+            get_conversation_template,
+        )
+
+        worker_addr = ret.json()["address"]
+
+        conv = get_conversation_template(model_name)
+        prompt = conv.get_prompt()
+        new_prompt = f"{prompt}{conversation_ui.create_new_prompt()}"
+
+        stream_iter = model_worker_stream_iter(
+            conv,
+            model_name,
+            worker_addr,
+            new_prompt,
+            temperature,
+            repetition_penalty,
+            top_p,
+            max_new_tokens,
+            images=[],
+        )
+    try:
+        for i, data in enumerate(stream_iter):
+            if data["error_code"] == 0:
+                output = data["text"].strip()
+                chuck = conversation_ui.conversation.get_new_streaming_chuck(output)
+                conversation_ui.conversation.update_streaming_msg(output)
+                yield chuck
+            else:
+                output = data["text"] + f"\n\n(error_code: {data['error_code']})"
+                yield output
+                return
+    except requests.exceptions.RequestException as e:
+        yield f"(error_code: {ErrorCode.GRADIO_REQUEST_ERROR}, {e})"
+        return
+    except Exception as e:
+        yield f"(error_code: {ErrorCode.GRADIO_STREAM_UNKNOWN_ERROR}, {e})"
+        return
+
+
 def chat_response(
         conversation_ui: ConversationUI,
         model_name: str,
@@ -330,62 +396,22 @@ def chat_response(
         max_new_tokens: int,
         container=None,
     ):
-    if st.secrets.use_arctic:
-        import replicate
-        
-        prompt_str = replicate_encoding[model_name](conversation_ui)
-
-        model_input = {"prompt": prompt_str,
-                    "prompt_template": r"{prompt}",
-                    "temperature": temperature,
-                    "top_p": top_p,
-                    }
-        stream_iter = replicate.stream(
-            model_name,
-            input=model_input)
+    if os.environ["USE_REPLICATE"]:
+        stream_iter = generate_stream_replicate(
+            conversation_ui=conversation_ui,
+            model_name=model_name,
+            temperature=temperature,
+            top_p=top_p,
+        )
     else:
-        # Set repetition_penalty
-        if "t5" in model_name:
-            repetition_penalty = 1.2
-        else:
-            repetition_penalty = 1.0
+        stream_iter = generate_stream(
+            conversation_ui=conversation_ui,
+            model_name=model_name,
+            temperature=temperature,
+            top_p=top_p,
+            max_new_tokens=max_new_tokens,
+        )
 
-        ret = None
-        with st.spinner("Thinking..."):
-            model_api_dict = (
-                api_endpoint_info[model_name]
-                if model_name in api_endpoint_info
-                else None
-            )
-
-            if model_api_dict is None:
-                # Query worker address
-                ret = requests.post(
-                    control_url + "/get_worker_address", json={"model": model_name}
-                )
-
-        if ret is not None:
-            from fastchat.model.model_adapter import (
-                get_conversation_template,
-            )
-
-            worker_addr = ret.json()["address"]
-
-            conv = get_conversation_template(model_name)
-            prompt = conv.get_prompt()
-            new_prompt = f"{prompt}{conversation_ui.create_new_prompt()}"
-
-            stream_iter = model_worker_stream_iter(
-                conv,
-                model_name,
-                worker_addr,
-                new_prompt,
-                temperature,
-                repetition_penalty,
-                top_p,
-                max_new_tokens,
-                images=[],
-            )
     if container:
         chat = container.chat_message("assistant")
     else:
