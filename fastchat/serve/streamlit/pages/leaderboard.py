@@ -44,7 +44,9 @@ def read_leaderboard_file_from_hf():
     from st_files_connection import FilesConnection
 
     conn = st.connection('hf', type=FilesConnection)
-    df_files = conn.fs.glob(str(Path("spaces") / LEADERBOARD_HF_SPACE / "leaderboard_table_*.csv"))
+    df_path = str(Path("spaces") / LEADERBOARD_HF_SPACE / "leaderboard_table_*.csv")
+    df_files = conn.fs.glob(df_path)
+    df_files.sort()
     latest_df = df_files[-1]
     with conn.open(latest_df) as f:
         lines_bytes = f.readlines()
@@ -89,7 +91,9 @@ def read_elo_results_from_hf():
     from st_files_connection import FilesConnection
 
     conn = st.connection('hf', type=FilesConnection)
-    elo_files = conn.fs.glob(str(Path("spaces") / LEADERBOARD_HF_SPACE / "elo_results_*.pkl"))
+    elo_path = str(Path("spaces") / LEADERBOARD_HF_SPACE / "elo_results_*.pkl")
+    elo_files = conn.fs.glob(elo_path)
+    elo_files.sort()
     latest_elo = elo_files[-1]
     with conn.open(latest_elo, "rb") as f:
         elo_results = pickle.load(f)
