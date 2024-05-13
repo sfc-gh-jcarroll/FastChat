@@ -1,7 +1,9 @@
 import json
 import logging
+import os
 import requests
 import streamlit as st
+from fastchat.constants import ErrorCode
 from messages_ui import ConversationUI
 from schemas import ConversationMessage
 
@@ -13,18 +15,6 @@ def page_setup(title, icon, wide_mode=False):
         st.set_option("client.showSidebarNavigation", False)
         st.session_state.already_ran = True
         st.rerun()
-
-    # TODO: Remove from final version
-    if "password" in st.secrets and "logged_in" not in st.session_state:
-        passwd = st.text_input("Enter password", type="password")
-        if passwd:
-            if passwd == st.secrets.password:
-                st.session_state.logged_in = True
-                st.rerun()
-            else:
-                st.warning("Incorrect password", icon="⚠️")
-        st.stop()
-
 
     st.set_page_config(
         page_title=title,
@@ -111,6 +101,35 @@ def page_setup(title, icon, wide_mode=False):
     return sidebar_container
 
 
+def get_parameters(container):
+    with container:
+        with st.popover("Parameters", use_container_width=True):
+            temperature = st.slider(
+                min_value=0.0,
+                max_value=1.0,
+                value=0.7,
+                step=0.1,
+                label="Temperature:",
+            )
+
+            top_p = st.slider(
+                min_value=0.0,
+                max_value=1.0,
+                value=1.0,
+                step=0.1,
+                label="Top P:",
+            )
+
+            max_new_tokens = st.slider(
+                min_value=100,
+                max_value=1500,
+                value=1024,
+                step=100,
+                label="Max new tokens:",
+            )
+    return temperature, top_p, max_new_tokens
+
+
 def get_model_list(controller_url, register_api_endpoint_file, multimodal):
     from fastchat.model.model_registry import model_info
 
@@ -155,6 +174,37 @@ def get_model_list(controller_url, register_api_endpoint_file, multimodal):
     models.sort(key=lambda x: priority.get(x, x))
     visible_models.sort(key=lambda x: priority.get(x, x))
     return visible_models, models
+
+
+def get_models():
+    if os.environ["USE_REPLICATE"]:
+        models = [
+            "snowflake/snowflake-arctic-instruct",
+            "meta/meta-llama-3-8b",
+            "mistralai/mistral-7b-instruct-v0.2",
+        ]
+    else:
+        control_url = "http://localhost:21001"
+        api_endpoint_info = ""
+        models, _ = get_model_list(control_url, api_endpoint_info, False)
+    return models
+
+
+MODEL_NAMES = [
+    ("Llama 3", "Open foundation and chat models by Meta"),
+    ("Gemini", "Gemini by Google"),
+    ("Claude", "Claude by Anthropic"),
+    ("Phi-3", "A capable and cost-effective small language models (SLMs), by Microsoft"),
+    ("Mixtral of experts", "A Mixture-of-Experts model by Mistral AI"),
+    ("Reka Flash", "Multimodal model by Reka"),
+    ("Command-R-Plus", "Command-R Plus by Cohere"),
+    ("Command-R", "Command-R by Cohere"),
+    ("Zephyr 141B-A35B", "ORPO fine-tuned of Mixtral-8x22B-v0.1"),
+    ("Gemma", "Gemma by Google"),
+    ("Qwen 1.5", "A large language model by Alibaba Cloud"),
+    ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
+]
+MODELS_HELP_STR = "\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES)
 
 
 def model_worker_stream_iter(
@@ -204,14 +254,123 @@ def model_worker_stream_iter(
             yield data
 
 
-def stream_data(streamer, conversation_ui: ConversationUI):
-    from fastchat.constants import ErrorCode
+def encode_arctic(conversation_ui: ConversationUI):
+    prompt = []
+    for msg in conversation_ui.conversation.messages:
+        prompt.append(f"<|im_start|>{msg.role}\n{msg.content}<|im_end|>")
 
-    if st.secrets.use_arctic:
-        for t in streamer:
-            yield str(t)
+    prompt.append("<|im_start|>assistant")
+    prompt.append("")
+    prompt_str = "\n".join(prompt)
+    return prompt_str
+
+
+def encode_llama3(conversation_ui: ConversationUI):
+    prompt = []
+    prompt.append("<|begin_of_text|>")
+    for msg in conversation_ui.conversation.messages:
+        prompt.append(f"<|start_header_id|>{msg.role}<|end_header_id|>")
+        prompt.append(f"{msg.content.strip()}<|eot_id|>")
+    prompt.append("<|start_header_id|>assistant<|end_header_id|>")
+    prompt.append("")
+    prompt_str = "\n\n".join(prompt)
+    return prompt_str
+
+
+def encode_generic(conversation_ui: ConversationUI):
+    prompt = []
+    for msg in conversation_ui.conversation.messages:
+        if msg.role == "user":
+            prompt.append("user:\n" + msg.content)
+        else:
+            prompt.append("assistant:\n" + msg.content)
+
+    prompt.append("assistant:")
+    prompt.append("")
+    prompt_str = "\n".join(prompt)
+    return prompt_str
+
+
+replicate_encoding = {
+    "snowflake/snowflake-arctic-instruct": encode_arctic,
+    "meta/meta-llama-3-8b": encode_llama3,
+    "mistralai/mistral-7b-instruct-v0.2": encode_generic,
+}
+
+
+def generate_stream_replicate(
+        conversation_ui: ConversationUI,
+        model_name: str,
+        temperature: float,
+        top_p: float,
+):
+    import replicate
+    
+    prompt_str = replicate_encoding[model_name](conversation_ui)
+
+    model_input = {"prompt": prompt_str,
+                "prompt_template": r"{prompt}",
+                "temperature": temperature,
+                "top_p": top_p,
+                }
+    stream_iter = replicate.stream(
+        model_name,
+        input=model_input)
+    
+    for t in stream_iter:
+        yield str(t)
+
+def generate_stream(
+        conversation_ui: ConversationUI,
+        model_name: str,
+        temperature: float,
+        top_p: float,
+        max_new_tokens: int,
+    ):
+    # Set repetition_penalty
+    if "t5" in model_name:
+        repetition_penalty = 1.2
+    else:
+        repetition_penalty = 1.0
+
+    ret = None
+    with st.spinner("Thinking..."):
+        model_api_dict = (
+            api_endpoint_info[model_name]
+            if model_name in api_endpoint_info
+            else None
+        )
+
+        if model_api_dict is None:
+            # Query worker address
+            ret = requests.post(
+                control_url + "/get_worker_address", json={"model": model_name}
+            )
+
+    if ret is not None:
+        from fastchat.model.model_adapter import (
+            get_conversation_template,
+        )
+
+        worker_addr = ret.json()["address"]
+
+        conv = get_conversation_template(model_name)
+        prompt = conv.get_prompt()
+        new_prompt = f"{prompt}{conversation_ui.create_new_prompt()}"
+
+        stream_iter = model_worker_stream_iter(
+            conv,
+            model_name,
+            worker_addr,
+            new_prompt,
+            temperature,
+            repetition_penalty,
+            top_p,
+            max_new_tokens,
+            images=[],
+        )
     try:
-        for i, data in enumerate(streamer):
+        for i, data in enumerate(stream_iter):
             if data["error_code"] == 0:
                 output = data["text"].strip()
                 chuck = conversation_ui.conversation.get_new_streaming_chuck(output)
@@ -229,47 +388,6 @@ def stream_data(streamer, conversation_ui: ConversationUI):
         return
 
 
-def encode_arctic(conversation_ui: ConversationUI):
-    prompt = []
-    for msg in conversation_ui.conversation.messages:
-        prompt.append(f"<|im_start|>{msg.role}\n{msg.content}<|im_end|>")
-
-    prompt.append("<|im_start|>assistant")
-    prompt.append("")
-    prompt_str = "\n".join(prompt)
-    return prompt_str
-
-def encode_llama3(conversation_ui: ConversationUI):
-    prompt = []
-    prompt.append("<|begin_of_text|>")
-    for msg in conversation_ui.conversation.messages:
-        prompt.append(f"<|start_header_id|>{msg.role}<|end_header_id|>")
-        prompt.append(f"{msg.content.strip()}<|eot_id|>")
-    prompt.append("<|start_header_id|>assistant<|end_header_id|>")
-    prompt.append("")
-    prompt_str = "\n\n".join(prompt)
-    return prompt_str
-
-def encode_generic(conversation_ui: ConversationUI):
-    prompt = []
-    for msg in conversation_ui.conversation.messages:
-        if msg.role == "user":
-            prompt.append("user:\n" + msg.content)
-        else:
-            prompt.append("assistant:\n" + msg.content)
-
-    prompt.append("assistant:")
-    prompt.append("")
-    prompt_str = "\n".join(prompt)
-    return prompt_str
-
-replicate_encoding = {
-    "snowflake/snowflake-arctic-instruct": encode_arctic,
-    "meta/meta-llama-3-8b": encode_llama3,
-    "mistralai/mistral-7b-instruct-v0.2": encode_generic,
-}
-
-
 def chat_response(
         conversation_ui: ConversationUI,
         model_name: str,
@@ -278,62 +396,22 @@ def chat_response(
         max_new_tokens: int,
         container=None,
     ):
-    if st.secrets.use_arctic:
-        import replicate
-        
-        prompt_str = replicate_encoding[model_name](conversation_ui)
-
-        model_input = {"prompt": prompt_str,
-                    "prompt_template": r"{prompt}",
-                    "temperature": temperature,
-                    "top_p": top_p,
-                    }
-        stream_iter = replicate.stream(
-            model_name,
-            input=model_input)
+    if os.environ["USE_REPLICATE"]:
+        stream_iter = generate_stream_replicate(
+            conversation_ui=conversation_ui,
+            model_name=model_name,
+            temperature=temperature,
+            top_p=top_p,
+        )
     else:
-        # Set repetition_penalty
-        if "t5" in model_name:
-            repetition_penalty = 1.2
-        else:
-            repetition_penalty = 1.0
+        stream_iter = generate_stream(
+            conversation_ui=conversation_ui,
+            model_name=model_name,
+            temperature=temperature,
+            top_p=top_p,
+            max_new_tokens=max_new_tokens,
+        )
 
-        ret = None
-        with st.spinner("Thinking..."):
-            model_api_dict = (
-                api_endpoint_info[model_name]
-                if model_name in api_endpoint_info
-                else None
-            )
-
-            if model_api_dict is None:
-                # Query worker address
-                ret = requests.post(
-                    control_url + "/get_worker_address", json={"model": model_name}
-                )
-
-        if ret is not None:
-            from fastchat.model.model_adapter import (
-                get_conversation_template,
-            )
-
-            worker_addr = ret.json()["address"]
-
-            conv = get_conversation_template(model_name)
-            prompt = conv.get_prompt()
-            new_prompt = f"{prompt}{conversation_ui.create_new_prompt()}"
-
-            stream_iter = model_worker_stream_iter(
-                conv,
-                model_name,
-                worker_addr,
-                new_prompt,
-                temperature,
-                repetition_penalty,
-                top_p,
-                max_new_tokens,
-                images=[],
-            )
     if container:
         chat = container.chat_message("assistant")
     else:

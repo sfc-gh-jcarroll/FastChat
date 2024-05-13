@@ -7,7 +7,9 @@ from messages_ui import ConversationUI
 from schemas import ConversationMessage
 from common import (
     chat_response,
-    get_model_list,
+    get_models,
+    get_parameters,
+    MODELS_HELP_STR,
     page_setup,
 )
 
@@ -30,82 +32,22 @@ if "side_by_side" not in st.session_state:
 conversations = st.session_state["side_by_side"]
 
 
-# TODO: add this as command param
-if st.secrets.use_arctic:
-    models = [
-        "snowflake/snowflake-arctic-instruct",
-        "meta/meta-llama-3-8b",
-        "mistralai/mistral-7b-instruct-v0.2",
-    ]
-else:
-    control_url = "http://localhost:21001"
-    api_endpoint_info = ""
-    models, all_models = get_model_list(control_url, api_endpoint_info, False)
-
-
 # Sidebar
-
-with sidebar_container:
-    with st.popover("Parameters", use_container_width=True):
-        temperature = st.slider(
-            min_value=0.0,
-            max_value=1.0,
-            value=0.7,
-            step=0.1,
-            label="Temperature:",
-        )
-
-        top_p = st.slider(
-            min_value=0.0,
-            max_value=1.0,
-            value=1.0,
-            step=0.1,
-            label="Top P:",
-        )
-
-        max_output_tokens = st.slider(
-            min_value=16,
-            max_value=2048,
-            value=1024,
-            step=64,
-            label="Max output tokens:",
-        )
-
-        max_new_tokens = st.slider(
-            min_value=100,
-            max_value=1500,
-            value=1024,
-            step=100,
-            label="Max new tokens:",
-        )
+temperature, top_p, max_new_tokens = get_parameters(sidebar_container)
 
 
 # Main area
 
 ""
 
-MODEL_NAMES = [
-    ("Llama 3", "Open foundation and chat models by Meta"),
-    ("Gemini", "Gemini by Google"),
-    ("Claude", "Claude by Anthropic"),
-    ("Phi-3", "A capable and cost-effective small language models (SLMs), by Microsoft"),
-    ("Mixtral of experts", "A Mixture-of-Experts model by Mistral AI"),
-    ("Reka Flash", "Multimodal model by Reka"),
-    ("Command-R-Plus", "Command-R Plus by Cohere"),
-    ("Command-R", "Command-R by Cohere"),
-    ("Zephyr 141B-A35B", "ORPO fine-tuned of Mixtral-8x22B-v0.1"),
-    ("Gemma", "Gemma by Google"),
-    ("Qwen 1.5", "A large language model by Alibaba Cloud"),
-    ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
-]
-MODEL_HELP_STR = "\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES)
+models = get_models()
 MODEL_LABELS = ["Model A", "Model B"]
 selected_models = [None for _ in conversations]
 model_cols = st.columns(len(selected_models))
 for idx in range(len(selected_models)):
     selected_models[idx] = model_cols[idx].selectbox(
         f"Select {MODEL_LABELS[idx]}:", models,
-        help=MODEL_HELP_STR, key=f"model_select_{idx}")
+        help=MODELS_HELP_STR, key=f"model_select_{idx}")
 
 # Render the chat
 for idx, msg in enumerate(conversations[0].conversation.messages):
@@ -119,12 +61,13 @@ for idx, msg in enumerate(conversations[0].conversation.messages):
                 container=msg_cols[i],
             )
 
-user_msg = st.container()
-response = st.container()
+user_msg = st.empty()
+response = st.empty()
 feedback_controls = st.empty()
 response_controls = st.empty()
 
-if user_input := st.chat_input("Enter your message here."):
+user_input = st.chat_input("Enter your message here.") or st.session_state.pop("regenerate", None)
+if user_input:
     new_msg = ConversationMessage(role="user", content=user_input)
     for c in conversations:
         c.add_message(new_msg, render=False)
@@ -163,7 +106,18 @@ def clear_history():
             render=False
         )
 
-if len(conversations[0].conversation.messages) > 2:
+@st.experimental_dialog("Share")
+def share():
+    st.write("Share your conversation with the following:")
+    st.divider()
+    st.write("_to add_")
+
+def regenerate():
+    st.session_state.regenerate = conversations[0].conversation.messages[-2].content
+    for conv in conversations:
+        del conv.conversation.messages[-2:]
+
+if len(conversations[0].conversation.messages) > 1:
     feedback_cols = feedback_controls.columns(4)
 
     BUTTON_LABELS = [
@@ -184,10 +138,11 @@ if len(conversations[0].conversation.messages) > 2:
     # TODO: Big loading skeleton always briefly shows on the hosted app
     action_cols = response_controls.columns(3)
 
-    action_cols[0].button("🔄&nbsp; Regenerate", use_container_width=True)
+    action_cols[0].button("🔄&nbsp; Regenerate", use_container_width=True, on_click=regenerate)
     action_cols[1].button(
         "🗑&nbsp; Clear history",
         use_container_width=True,
         on_click=clear_history,
     )
-    action_cols[2].button("📷 &nbsp; Share", use_container_width=True)
+    if action_cols[2].button("📷 &nbsp; Share", use_container_width=True):
+        share()
