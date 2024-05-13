@@ -8,6 +8,7 @@ from schemas import ConversationMessage
 from common import (
     chat_response,
     get_model_list,
+    get_parameters,
     page_setup,
 )
 
@@ -44,40 +45,7 @@ else:
 
 
 # Sidebar
-
-with sidebar_container:
-    with st.popover("Parameters", use_container_width=True):
-        temperature = st.slider(
-            min_value=0.0,
-            max_value=1.0,
-            value=0.7,
-            step=0.1,
-            label="Temperature:",
-        )
-
-        top_p = st.slider(
-            min_value=0.0,
-            max_value=1.0,
-            value=1.0,
-            step=0.1,
-            label="Top P:",
-        )
-
-        max_output_tokens = st.slider(
-            min_value=16,
-            max_value=2048,
-            value=1024,
-            step=64,
-            label="Max output tokens:",
-        )
-
-        max_new_tokens = st.slider(
-            min_value=100,
-            max_value=1500,
-            value=1024,
-            step=100,
-            label="Max new tokens:",
-        )
+temperature, top_p, max_new_tokens = get_parameters(sidebar_container)
 
 
 # Main area
@@ -119,12 +87,13 @@ for idx, msg in enumerate(conversations[0].conversation.messages):
                 container=msg_cols[i],
             )
 
-user_msg = st.container()
-response = st.container()
+user_msg = st.empty()
+response = st.empty()
 feedback_controls = st.empty()
 response_controls = st.empty()
 
-if user_input := st.chat_input("Enter your message here."):
+user_input = st.chat_input("Enter your message here.") or st.session_state.pop("regenerate", None)
+if user_input:
     new_msg = ConversationMessage(role="user", content=user_input)
     for c in conversations:
         c.add_message(new_msg, render=False)
@@ -163,7 +132,18 @@ def clear_history():
             render=False
         )
 
-if len(conversations[0].conversation.messages) > 2:
+@st.experimental_dialog("Share")
+def share():
+    st.write("Share your conversation with the following:")
+    st.divider()
+    st.write("_to add_")
+
+def regenerate():
+    st.session_state.regenerate = conversations[0].conversation.messages[-2].content
+    for conv in conversations:
+        del conv.conversation.messages[-2:]
+
+if len(conversations[0].conversation.messages) > 1:
     feedback_cols = feedback_controls.columns(4)
 
     BUTTON_LABELS = [
@@ -184,10 +164,11 @@ if len(conversations[0].conversation.messages) > 2:
     # TODO: Big loading skeleton always briefly shows on the hosted app
     action_cols = response_controls.columns(3)
 
-    action_cols[0].button("🔄&nbsp; Regenerate", use_container_width=True)
+    action_cols[0].button("🔄&nbsp; Regenerate", use_container_width=True, on_click=regenerate)
     action_cols[1].button(
         "🗑&nbsp; Clear history",
         use_container_width=True,
         on_click=clear_history,
     )
-    action_cols[2].button("📷 &nbsp; Share", use_container_width=True)
+    if action_cols[2].button("📷 &nbsp; Share", use_container_width=True):
+        share()
