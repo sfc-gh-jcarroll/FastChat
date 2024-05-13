@@ -10,6 +10,17 @@ from schemas import ConversationMessage
 control_url = "http://localhost:21001"
 api_endpoint_info = ""
 
+SPONSOR_LOGOS = [
+    "https://storage.googleapis.com/public-arena-asset/skylab.png",
+    "https://storage.googleapis.com/public-arena-asset/kaggle.png",
+    "https://storage.googleapis.com/public-arena-asset/mbzuai.jpeg",
+    "https://storage.googleapis.com/public-arena-asset/a16z.jpeg",
+    "https://storage.googleapis.com/public-arena-asset/together.png",
+    "https://storage.googleapis.com/public-arena-asset/hyperbolic_logo.png",
+    "https://storage.googleapis.com/public-arena-asset/anyscale.png",
+    "https://storage.googleapis.com/public-arena-asset/huggingface.png",
+]
+
 def page_setup(title, icon, wide_mode=False):
     if "already_ran" not in st.session_state:
         st.set_option("client.showSidebarNavigation", False)
@@ -68,26 +79,19 @@ def page_setup(title, icon, wide_mode=False):
 
         # Sponsors expander
 
-        SPONSOR_LOGOS = [
-            "https://storage.googleapis.com/public-arena-asset/kaggle.png",
-            "https://storage.googleapis.com/public-arena-asset/mbzuai.jpeg",
-            "https://storage.googleapis.com/public-arena-asset/a16z.jpeg",
-            "https://storage.googleapis.com/public-arena-asset/together.png",
-            "https://storage.googleapis.com/public-arena-asset/anyscale.png",
-            "https://storage.googleapis.com/public-arena-asset/huggingface.png",
-        ]
-
         with st.popover("Sponsors", use_container_width=True):
+             
             st.write("""
-                We thank [Kaggle](https://www.kaggle.com/), [MBZUAI](https://mbzuai.ac.ae/),
-                [a16z](https://www.a16z.com/), [Together AI](https://www.together.ai/),
-                [Anyscale](https://www.anyscale.com/), [HuggingFace](https://huggingface.co/) for their generous
-                [sponsorship](https://lmsys.org/donations/).
+                We thank [UC Berkeley SkyLab](https://sky.cs.berkeley.edu/), [Kaggle](https://www.kaggle.com/),
+                [MBZUAI](https://mbzuai.ac.ae/), [a16z](https://www.a16z.com/), [Together AI](https://www.together.ai/),
+                [Hyperbolic](https://hyperbolic.xyz/), [Anyscale](https://www.anyscale.com/),
+                [HuggingFace](https://huggingface.co/) for their generous sponsorship. Learn more
+                about partnership [here](https://lmsys.org/donations/).
             """)
 
             st.write("") # Vertical spacing
 
-            NUM_COLS = 3
+            NUM_COLS = 4
             for i, logo in enumerate(SPONSOR_LOGOS):
                 col_index = i % NUM_COLS
 
@@ -184,8 +188,6 @@ def get_models():
             "mistralai/mistral-7b-instruct-v0.2",
         ]
     else:
-        control_url = "http://localhost:21001"
-        api_endpoint_info = ""
         models, _ = get_model_list(control_url, api_endpoint_info, False)
     return models
 
