@@ -177,7 +177,7 @@ def get_model_list(controller_url, register_api_endpoint_file, multimodal):
 
 
 def get_models():
-    if os.environ["USE_REPLICATE"]:
+    if os.getenv("USE_REPLICATE"):
         models = [
             "snowflake/snowflake-arctic-instruct",
             "meta/meta-llama-3-8b",
@@ -396,7 +396,7 @@ def chat_response(
         max_new_tokens: int,
         container=None,
     ):
-    if os.environ["USE_REPLICATE"]:
+    if os.getenv("USE_REPLICATE"):
         stream_iter = generate_stream_replicate(
             conversation_ui=conversation_ui,
             model_name=model_name,
@@ -416,9 +416,7 @@ def chat_response(
         chat = container.chat_message("assistant")
     else:
         chat = st.chat_message("assistant")
-    full_streamed_response = chat.write_stream(
-        stream_data(stream_iter, conversation_ui)
-    )
+    full_streamed_response = chat.write_stream(stream_iter)
     conversation_ui.conversation.add_message(
         ConversationMessage(
             role="assistant", content=str(full_streamed_response).strip()
