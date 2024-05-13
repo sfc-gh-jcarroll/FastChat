@@ -14,7 +14,7 @@ from common import (
 )
 
 sidebar_container = page_setup(
-        title="LMSYS Chatbot Arena: Benchmarking LLMs in the Wild",
+        title="Benchmarking LLMs in the Wild",
         icon="⚔️",
         wide_mode=True,
     )

@@ -3,6 +3,9 @@ import streamlit as st
 from common import page_setup
 
 page_setup(
-    title="Chatbot Arena: battle",
-    icon="⚔️",
-)
+        title="Benchmarking LLMs in the Wild",
+        icon="⚔️",
+        #wide_mode=True,
+    )
+
+st.info("Coming soon")
