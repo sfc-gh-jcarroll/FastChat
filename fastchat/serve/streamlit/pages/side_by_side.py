@@ -7,8 +7,9 @@ from messages_ui import ConversationUI
 from schemas import ConversationMessage
 from common import (
     chat_response,
-    get_model_list,
+    get_models,
     get_parameters,
+    MODELS_HELP_STR,
     page_setup,
 )
 
@@ -31,19 +32,6 @@ if "side_by_side" not in st.session_state:
 conversations = st.session_state["side_by_side"]
 
 
-# TODO: add this as command param
-if st.secrets.use_arctic:
-    models = [
-        "snowflake/snowflake-arctic-instruct",
-        "meta/meta-llama-3-8b",
-        "mistralai/mistral-7b-instruct-v0.2",
-    ]
-else:
-    control_url = "http://localhost:21001"
-    api_endpoint_info = ""
-    models, all_models = get_model_list(control_url, api_endpoint_info, False)
-
-
 # Sidebar
 temperature, top_p, max_new_tokens = get_parameters(sidebar_container)
 
@@ -52,28 +40,14 @@ temperature, top_p, max_new_tokens = get_parameters(sidebar_container)
 
 ""
 
-MODEL_NAMES = [
-    ("Llama 3", "Open foundation and chat models by Meta"),
-    ("Gemini", "Gemini by Google"),
-    ("Claude", "Claude by Anthropic"),
-    ("Phi-3", "A capable and cost-effective small language models (SLMs), by Microsoft"),
-    ("Mixtral of experts", "A Mixture-of-Experts model by Mistral AI"),
-    ("Reka Flash", "Multimodal model by Reka"),
-    ("Command-R-Plus", "Command-R Plus by Cohere"),
-    ("Command-R", "Command-R by Cohere"),
-    ("Zephyr 141B-A35B", "ORPO fine-tuned of Mixtral-8x22B-v0.1"),
-    ("Gemma", "Gemma by Google"),
-    ("Qwen 1.5", "A large language model by Alibaba Cloud"),
-    ("DBRX Instruct", "DBRX by Databricks Mosaic AI"),
-]
-MODEL_HELP_STR = "\n".join(f"1. **{name}:** {desc}" for name, desc in MODEL_NAMES)
+models = get_models()
 MODEL_LABELS = ["Model A", "Model B"]
 selected_models = [None for _ in conversations]
 model_cols = st.columns(len(selected_models))
 for idx in range(len(selected_models)):
     selected_models[idx] = model_cols[idx].selectbox(
         f"Select {MODEL_LABELS[idx]}:", models,
-        help=MODEL_HELP_STR, key=f"model_select_{idx}")
+        help=MODELS_HELP_STR, key=f"model_select_{idx}")
 
 # Render the chat
 for idx, msg in enumerate(conversations[0].conversation.messages):
