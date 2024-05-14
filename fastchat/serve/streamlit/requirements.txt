@@ -1,3 +1,6 @@
+# Requirements for running the Streamlit version as a standalone app
+# such as in Streamlit Community Cloud.
+# This can be ignored in most real usage.
 streamlit>=1.34.0
 streamlit-feedback
 st-files-connection

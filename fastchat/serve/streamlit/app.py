@@ -1,3 +1,16 @@
+### This is the main entrypoint for running the streamlit app version
+### Typically launched with: `streamlit run fastchat/serve/streamlit/app.py`
+###
+### This can also be run as a standalone version calling models on replicate
+### as follows:
+###
+### ```sh
+### pip install -r fastchat/serve/streamlit/requirements.txt
+### export USE_REPLICATE=true
+### export REPLICATE_API_TOKEN="r8_ABC123..."
+### streamlit run fastchat/serve/streamlit/app.py
+### ```
+
 import streamlit as st
 from streamlit_feedback import streamlit_feedback
 

@@ -227,6 +227,11 @@ python3 -m fastchat.serve.test_message --model-name vicuna-7b-v1.5
 ```
 You will see a short output.
 
+#### Launch the Streamlit web server
+```bash
+python3 -m streamlit run fastchat/serve/streamlit/app.py
+```
+
 #### Launch the Gradio web server
 ```bash
 python3 -m fastchat.serve.gradio_web_server

@@ -1,6 +1,3 @@
-# Streamlit
-.streamlit/secrets.toml
-
 # Python
 __pycache__
 *.pyc
@@ -24,6 +21,8 @@ dist
 wandb
 output
 checkpoints_flant5_3b
+.streamlit/secrets.toml
+.mise.toml
 
 # Data
 *.pkl
