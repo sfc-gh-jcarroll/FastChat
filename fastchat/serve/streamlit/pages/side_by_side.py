@@ -74,7 +74,7 @@ if st.session_state.get("share_mode"):
 else:
     user_input = st.chat_input("Enter your message here.")
 
-if user_input or st.session_state.pop("regenerate", None):
+if user_input := user_input or st.session_state.pop("regenerate", None):
     new_msg = ConversationMessage(role="user", content=user_input)
     for c in conversations:
         c.add_message(new_msg, render=False)
